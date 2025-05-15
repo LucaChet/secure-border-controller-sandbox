@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<ITResourceOrchestration xmlns="http://modeliosoft/xsddesigner/a22bd60b-ee3d-425c-8618-beb6a854051a/ITResource.xsd"
+                         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="omspl_5b0fd7359a5e40fe92399710c1152ed9"
+                         xsi:schemaLocation="http://modeliosoft/xsddesigner/a22bd60b-ee3d-425c-8618-beb6a854051a/ITResource.xsd ../xsd/mspl.xsd">
+
+    <!-- Authorization Intents -->
+    <ITResource>
+        <configuration xsi:type="AuthorizationIntents">
+            <capability>
+                <Name>KubernetesNetworkFiltering</Name>
+            </capability>
+            <!-- from ANY to I2_<badURLs>, ALL protocols -->
+            <!-- Four different rules to deny any other connections to "name:dafault" with port !80 and protocol !TCP-->
+            <!-- from ANY to "name:default", SCTP -->
+            <forbiddenConnectionList>
+                <configurationRuleAction xsi:type="KubernetesNetworkFilteringAction">
+                    <KubernetesNetworkFilteringActionType>DENY</KubernetesNetworkFilteringActionType>
+                </configurationRuleAction>
+                <configurationCondition xsi:type="KubernetesNetworkFilteringCondition">
+                    <isCNF>false</isCNF>
+                    <source xsi:type="PodNamespaceSelector">
+                        <isHostCluster>true</isHostCluster>
+                        <pod>
+                            <key>*</key>
+                            <value>*</value>
+                        </pod>
+                        <namespace>
+                            <key>*</key>
+                            <value>*</value>
+                        </namespace>
+                    </source>
+                    <sourcePort>*</sourcePort>
+                    <destination xsi:type="PodNamespaceSelector">
+                        <isHostCluster>false</isHostCluster>
+                        <pod>
+                            <key>*</key>
+                            <value>*</value>
+                        </pod>
+                        <namespace>
+                            <key>name</key>
+                            <value>handle-payments</value>
+                        </namespace>
+                    </destination>
+                    <destinationPort>*</destinationPort>
+                    <protocolType>SCTP</protocolType>
+                </configurationCondition>
+                <externalData xsi:type="Priority">
+                    <value>60000</value>
+                </externalData>
+                <Name>AuthorizationDeny_2</Name>
+                <isCNF>false</isCNF>
+            </forbiddenConnectionList>
+            <!-- from ANY to "name:default":0-79, TCP -->
+            <forbiddenConnectionList>
+                <configurationRuleAction xsi:type="KubernetesNetworkFilteringAction">
+                    <KubernetesNetworkFilteringActionType>DENY</KubernetesNetworkFilteringActionType>
+                </configurationRuleAction>
+                <configurationCondition xsi:type="KubernetesNetworkFilteringCondition">
+                    <isCNF>false</isCNF>
+                    <source xsi:type="PodNamespaceSelector">
+                        <isHostCluster>true</isHostCluster>
+                        <pod>
+                            <key>*</key>
+                            <value>*</value>
+                        </pod>
+                        <namespace>
+                            <key>*</key>
+                            <value>*</value>
+                        </namespace>
+                    </source>
+                    <sourcePort>*</sourcePort>
+                    <destination xsi:type="PodNamespaceSelector">
+                        <isHostCluster>false</isHostCluster>
+                        <pod>
+                            <key>*</key>
+                            <value>*</value>
+                        </pod>
+                        <namespace>
+                            <key>name</key>
+                            <value>handle-payments</value>
+                        </namespace>
+                    </destination>
+                    <destinationPort>0-79</destinationPort>
+                    <protocolType>TCP</protocolType>
+                </configurationCondition>
+                <externalData xsi:type="Priority">
+                    <value>60000</value>
+                </externalData>
+                <Name>AuthorizationDeny_3</Name>
+                <isCNF>false</isCNF>
+            </forbiddenConnectionList>
+            <!-- MandatoryConnectionList (action = ALLOW) -->
+            <!-- from "app:resource_monitor" to "name:turin" : 43, TCP  -->
+            <mandatoryConnectionList>
+                <configurationRuleAction xsi:type="KubernetesNetworkFilteringAction">
+                    <KubernetesNetworkFilteringActionType>ALLOW</KubernetesNetworkFilteringActionType>
+                </configurationRuleAction>
+                <configurationCondition xsi:type="KubernetesNetworkFilteringCondition">
+                    <isCNF>false</isCNF>
+                    <source xsi:type="PodNamespaceSelector">
+                        <isHostCluster>false</isHostCluster>
+                        <pod>
+                            <key>app</key>
+                            <value>resource-monitor</value>
+                        </pod>
+                        <namespace>
+                            <key>name</key>
+                            <value>monitoring</value>
+                        </namespace>
+                    </source>
+                    <sourcePort>*</sourcePort>
+                    <destination xsi:type="PodNamespaceSelector">
+                        <isHostCluster>true</isHostCluster>
+                        <pod>
+                            <key>*</key>
+                            <value>*</value>
+                        </pod>
+                        <namespace>
+                            <key>*</key>
+                            <value>*</value>
+                        </namespace>
+                    </destination>
+                    <destinationPort>43</destinationPort>
+                    <protocolType>TCP</protocolType>
+                </configurationCondition>
+                <Name>AuthorizationMandatory_1</Name>
+                <isCNF>false</isCNF>
+            </mandatoryConnectionList>
+        </configuration>
+    </ITResource>
+</ITResourceOrchestration>

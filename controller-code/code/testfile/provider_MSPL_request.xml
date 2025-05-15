@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<ITResourceOrchestration xmlns="http://modeliosoft/xsddesigner/a22bd60b-ee3d-425c-8618-beb6a854051a/ITResource.xsd"
+                         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="omspl_5b0fd7359a5e40fe92399710c1152ed9"
+                         xsi:schemaLocation="http://modeliosoft/xsddesigner/a22bd60b-ee3d-425c-8618-beb6a854051a/ITResource.xsd ../xsd/mspl.xsd">
+
+    <ITResource>
+        <configuration xsi:type="PrivateIntents">
+            <capability>
+                <Name>KubernetesNetworkFiltering</Name>
+            </capability>
+        </configuration>
+    </ITResource>
+
+    <!-- Request Intents -->
+    <ITResource>
+        <configuration xsi:type="RequestIntents">
+            <capability>
+                <Name>KubernetesNetworkFiltering</Name>
+            </capability>
+            <acceptMonitoring>true</acceptMonitoring>
+        </configuration>
+    </ITResource>
+</ITResourceOrchestration>

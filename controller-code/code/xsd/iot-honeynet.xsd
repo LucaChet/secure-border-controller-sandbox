@@ -1,0 +1,151 @@
+<xs:schema 
+  attributeFormDefault="unqualified" elementFormDefault="qualified" 
+  xmlns:tns="http://www.example.org/IoTHoneynetSchema"
+  xmlns:xs="http://www.w3.org/2001/XMLSchema"
+  targetNamespace="http://www.example.org/IoTHoneynetSchema">
+
+  <xs:element name="ioTHoneyNet" type="tns:ioTHoneyNetType"/>
+
+  <xs:complexType name="ioTHoneyNetType">
+    <xs:sequence>
+      <xs:element type="xs:string" name="name"/>
+      <xs:element name="net" type="tns:netType" maxOccurs="unbounded" minOccurs="0"/>
+      <xs:element name="router" type="tns:ioTRouterType" maxOccurs="unbounded" minOccurs="0"/>
+      <xs:element name="containmentGateway" type="tns:containmentGatewayType" maxOccurs="unbounded" minOccurs="0"/>
+      <xs:element name="ioTHoneyPot" type="tns:ioTHoneyPotType" maxOccurs="unbounded" minOccurs="0"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="honeyNetType">
+    <xs:sequence>
+      <xs:element type="xs:string" name="name"/>
+      <xs:element name="net" type="tns:netType" maxOccurs="unbounded" minOccurs="0"/>
+      <xs:element name="router" type="tns:routerType" maxOccurs="unbounded" minOccurs="0"/>
+      <xs:element name="containmentGateway" type="tns:containmentGatewayType" maxOccurs="unbounded" minOccurs="0"/>
+      <xs:element name="honeyPot" type="tns:honeyPotType" maxOccurs="unbounded" minOccurs="0"/>
+    </xs:sequence>
+  </xs:complexType>
+
+
+  <xs:complexType name="netType">
+          <xs:sequence>
+            <xs:element type="xs:string" name="name"/>
+          </xs:sequence>
+          <xs:attribute type="xs:byte" name="id" use="optional"/>
+        </xs:complexType>
+
+
+  <xs:complexType name="routerType">
+    <xs:sequence>
+      <xs:element type="xs:string" name="name"/>
+      <xs:element name="if" type="tns:ifType" maxOccurs="unbounded" minOccurs="1"/>
+      <xs:element name="route" type="tns:routeType" maxOccurs="unbounded" minOccurs="0"/>
+      <xs:element name="operatingSystem" type="tns:operatingSystemType"/>
+    </xs:sequence>
+    <xs:attribute type="xs:byte" name="id"/>
+  </xs:complexType>
+
+  <xs:complexType name="routeType">
+    <xs:sequence>
+      <xs:element type="xs:string" name="dst"/>
+      <xs:element type="xs:string" name="gw"/>
+    </xs:sequence>
+    <xs:attribute type="xs:byte" name="id"/>
+  </xs:complexType>
+
+
+  <xs:complexType name="containmentGatewayType">
+    <xs:sequence>
+      <xs:element type="xs:string" name="name"/>
+      <xs:element name="if" type="tns:ifType"/>
+      <xs:element name="operatingSystem" type="tns:operatingSystemType"/>
+    </xs:sequence>
+  </xs:complexType>
+
+
+  <xs:complexType name="honeyPotType">
+    <xs:sequence>
+      <xs:element type="xs:string" name="name"/>
+      <xs:element type="tns:interactionLevel" name="interaction_level"/>
+      <xs:element name="if" type="tns:ifType"/>
+      <xs:element name="operatingSystem" type="tns:operatingSystemType"/>
+      <xs:element name="software" type="tns:softwareType"/>
+    </xs:sequence>
+    <xs:attribute type="xs:byte" name="id"/>
+  </xs:complexType>
+
+  <xs:complexType name="ioTHoneyPotType">
+    <xs:complexContent>
+        <xs:extension base="tns:honeyPotType">
+            <xs:sequence>
+        <xs:element name="model" type="xs:string" minOccurs="0"/>
+                <xs:element name="location" type="tns:physicalLocation" minOccurs="0"/>
+                <xs:element name="resource" type="tns:ioTResourceType" minOccurs="0" maxOccurs="unbounded"/>
+            </xs:sequence>
+        </xs:extension>
+    </xs:complexContent>
+  </xs:complexType>
+
+  
+  <xs:complexType name="ioTRouterType">
+    <xs:complexContent>
+        <xs:extension base="tns:ioTHoneyPotType">
+            <xs:sequence>
+                <xs:element name="route" type="tns:routeType" maxOccurs="unbounded" minOccurs="0"/>
+            </xs:sequence>
+        </xs:extension>
+    </xs:complexContent>
+  </xs:complexType>
+  
+  
+<xs:complexType name="physicalLocation">
+    <xs:sequence>
+      <xs:element name="x" type="xs:decimal" minOccurs="0"/>
+      <xs:element name="y" type="xs:decimal" minOccurs="0"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:simpleType name="ioTResourceType">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="TEMPERATURE"/>
+      <xs:enumeration value="HUMIDITY"/>
+      <xs:enumeration value="PRESSURE"/>
+      <xs:enumeration value="LIGHT"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="interactionLevel">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="LOW"/>
+      <xs:enumeration value="MEDIUM"/>
+      <xs:enumeration value="HIGH"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+
+  <xs:complexType name="ifType">
+    <xs:sequence>
+      <xs:element type="xs:string" name="name"/>
+      <xs:element type="xs:string" name="mac_addr"/>
+      <xs:element type="xs:string" name="ip"/>
+    </xs:sequence>
+    <xs:attribute type="xs:byte" name="id"/>
+    <xs:attribute type="xs:string" name="net"/>
+  </xs:complexType>
+
+  <xs:complexType name="operatingSystemType">
+    <xs:sequence>
+      <xs:element type="xs:string" name="name"/>
+      <xs:element type="xs:string" name="version"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="softwareType">
+    <xs:sequence>
+      <xs:element type="xs:string" name="name"/>
+      <xs:element type="xs:float" name="version"/>
+    </xs:sequence>
+    <xs:attribute type="xs:byte" name="id"/>
+  </xs:complexType>
+
+</xs:schema>

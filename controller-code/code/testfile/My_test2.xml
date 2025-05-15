@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<ITResourceOrchestration xmlns="http://modeliosoft/xsddesigner/a22bd60b-ee3d-425c-8618-beb6a854051a/ITResource.xsd"
+ xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="omspl_5b0fd7359a5e40fe92399710c1152ed9"  
+ xsi:schemaLocation="http://modeliosoft/xsddesigner/a22bd60b-ee3d-425c-8618-beb6a854051a/ITResource.xsd ../xsd/mspl.xsd">
+  
+ <ITResource>
+    <configuration xsi:type="RequestIntents">
+      <capability>
+        <Name>KubernetesNetworkFiltering</Name>
+      </capability>
+        <acceptMonitoring>true</acceptMonitoring>
+    </configuration>
+  </ITResource>
+  
+  <!-- Private Intents -->
+  <ITResource>
+    <configuration xsi:type="PrivateIntents">
+      <capability>
+        <Name>KubernetesNetworkFiltering</Name>
+      </capability>
+      <!-- from "app:app-payment-1" to "app:bank-3", TCP:80 -->
+      <configurationRule>
+        <configurationRuleAction xsi:type="KubernetesNetworkFilteringAction">
+          <KubernetesNetworkFilteringActionType>ALLOW</KubernetesNetworkFilteringActionType>
+        </configurationRuleAction>
+        <configurationCondition xsi:type="KubernetesNetworkFilteringCondition">
+          <isCNF>false</isCNF>
+          <source xsi:type="PodNamespaceSelector">
+          	<isHostCluster>false</isHostCluster>
+          	<pod>
+          		<key>app</key>
+          		<value>app-payment-1</value>
+          	</pod>
+          	<namespace>
+          		<key>*</key>
+          		<value>payments</value>
+          	</namespace>
+          </source>
+          <sourcePort>*</sourcePort>
+          <destination xsi:type="PodNamespaceSelector">
+            <isHostCluster>true</isHostCluster>
+          	<pod>
+          		<key>app</key>
+          		<value>bank-3</value>
+          	</pod>
+          	<namespace>
+          		<key>*</key>
+          		<value>handle-payments</value>
+          	</namespace>
+          </destination>
+          <destinationPort>80</destinationPort>
+          <protocolType>TCP</protocolType>
+        </configurationCondition>
+        <externalData xsi:type="Priority">
+          <value>60000</value>
+        </externalData>
+        <Name>test_1</Name>
+        <isCNF>false</isCNF>
+      </configurationRule>
+
+  
+<!-- from ANY(Products) 142.250.0.0/15, TCP:80 -->
+      <configurationRule>
+        <configurationRuleAction xsi:type="KubernetesNetworkFilteringAction">
+          <KubernetesNetworkFilteringActionType>ALLOW</KubernetesNetworkFilteringActionType>
+        </configurationRuleAction>
+        <configurationCondition xsi:type="KubernetesNetworkFilteringCondition">
+          <isCNF>false</isCNF>
+          <source xsi:type="PodNamespaceSelector">
+          	<isHostCluster>false</isHostCluster>
+          	<pod>
+          		<key>*</key>
+          		<value>*</value>
+          	</pod>
+          	<namespace>
+          		<key>*</key>
+          		<value>products</value>
+          	</namespace>
+          </source>
+          <sourcePort>*</sourcePort>
+          <destination xsi:type="CIDRSelector">
+          	<isHostCluster>true</isHostCluster>
+            <addressRange>142.250.0.0/15</addressRange>
+          </destination>
+          <destinationPort>80</destinationPort>
+          <protocolType>TCP</protocolType>
+        </configurationCondition>
+        <externalData xsi:type="Priority">
+          <value>60000</value>
+        </externalData>
+        <Name>test_2</Name>
+        <isCNF>false</isCNF>
+      </configurationRule>
+
+<!-- from "app:app-payment-2" to ANY "handle-payments", TCP:80 -->
+      <configurationRule>
+        <configurationRuleAction xsi:type="KubernetesNetworkFilteringAction">
+          <KubernetesNetworkFilteringActionType>ALLOW</KubernetesNetworkFilteringActionType>
+        </configurationRuleAction>
+        <configurationCondition xsi:type="KubernetesNetworkFilteringCondition">
+          <isCNF>false</isCNF>
+          <source xsi:type="PodNamespaceSelector">
+          	<isHostCluster>false</isHostCluster>
+          	<pod>
+          		<key>app</key>
+          		<value>app-payment-2</value>
+          	</pod>
+          	<namespace>
+          		<key>*</key>
+          		<value>payments</value>
+          	</namespace>
+          </source>
+          <sourcePort>*</sourcePort>
+          <destination xsi:type="PodNamespaceSelector">
+          	<isHostCluster>true</isHostCluster>
+          	<pod>
+          		<key>*</key>
+          		<value>*</value>
+          	</pod>
+          	<namespace>
+          		<key>*</key>
+          		<value>handle-payments</value>
+          	</namespace>
+          </destination>
+          <destinationPort>80</destinationPort>
+          <protocolType>ALL</protocolType>
+        </configurationCondition>
+        <externalData xsi:type="Priority">
+          <value>60000</value>
+        </externalData>
+        <Name>test4</Name>
+        <isCNF>false</isCNF>
+      </configurationRule>
+    </configuration>
+  </ITResource>
+</ITResourceOrchestration>
+
