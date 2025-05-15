@@ -1,0 +1,9 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: "peeringcandidates-cluster-role"
+  namespace: fluidos
+rules:
+ - apiGroups: ["advertisement.fluidos.eu"]
+   resources: ["peeringcandidates"]
+   verbs: ["get", "list", "watch"]

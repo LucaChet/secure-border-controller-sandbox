@@ -1,0 +1,30 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: resource-monitor
+  namespace: monitoring
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: resource-monitor
+  template:
+    metadata:
+      labels:
+        app: resource-monitor
+    spec:
+      containers:
+      - name: busybox
+        image: busybox
+        command: ["/bin/sh", "-c", "while true; do echo hello; sleep 10; done"]
+        ports:
+        - containerPort: 80
+        - containerPort: 85
+        - containerPort: 90  
+        resources:
+          requests:
+            memory: "16Mi"
+            cpu: "10m"
+          limits:
+            memory: "32Mi"
+            cpu: "20m"

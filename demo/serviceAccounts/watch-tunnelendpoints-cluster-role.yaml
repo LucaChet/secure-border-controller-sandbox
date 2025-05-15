@@ -1,0 +1,9 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: tunnelendpoints-cluster-role
+  namespace: fluidos
+rules:
+- apiGroups: ["net.liqo.io"]
+  resources: ["tunnelendpoints"]
+  verbs: ["get", "list", "watch"]

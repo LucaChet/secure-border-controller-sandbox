@@ -1,0 +1,12 @@
+apiVersion: nodecore.fluidos.eu/v1alpha1
+kind: Allocation
+metadata:
+  name: allocation-sample
+  namespace: fluidos
+spec:
+  # Get it from the solver
+  # intentID: intent-sample
+  # Retrieve information from the reservation and the contract bou d to it
+  contract:
+    name: "contract-fluidos-eu-k8slice-demo-1-7472"
+    namespace: fluidos

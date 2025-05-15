@@ -1,0 +1,26 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: list-user
+  namespace: users
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: list-user
+  template:
+    metadata:
+      labels:
+        app: list-user
+    spec:
+      containers:
+      - name: busybox
+        image: busybox
+        command: ["/bin/sh", "-c", "while true; do echo hello; sleep 10; done"]
+        resources:
+          requests:
+            memory: "16Mi"
+            cpu: "10m"
+          limits:
+            memory: "32Mi"
+            cpu: "20m"

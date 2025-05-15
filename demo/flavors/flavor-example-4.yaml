@@ -1,0 +1,181 @@
+apiVersion: nodecore.fluidos.eu/v1alpha1
+kind: Flavor
+metadata:
+  creationTimestamp: "2024-09-28T15:59:42Z"
+  generation: 1
+  name: fluidos.eu-k8slice-demo-4
+  namespace: fluidos
+  ownerReferences:
+    - apiVersion: nodecore.fluidos.eu/v1alpha1
+      kind: Node
+      name: fluidos-provider-1-worker2
+      uid: 4d237fcf-2f39-46bd-bb20-4e799916cfc9
+  resourceVersion: "10523"
+  uid: 75b62c8a-d199-4254-b899-9b08ee7d6de7
+spec:
+  availability: true
+  flavorType:
+    typeData:
+      characteristics:
+        architecture: amd64
+        cpu: 14410858793n
+        gpu:
+          cores: "0"
+          memory: "0"
+          model: ""
+        memory: 6896952Ki
+        pods: "110"
+        storage: "0"
+      properties:
+        networkAuthorizations:
+          mandatoryCommunications:
+            - name: "AuthorizationMandatory_1"
+              source:
+                isHotCluster: false
+                resourceSelector:
+                  typeIdentifier: PodNamespaceSelector
+                  selector:
+                    pod:
+                      app: "resource-monitor"
+                    namespace:
+                      name: "monitoring"
+              destination:
+                resourceSelector:
+                  isHotCluster: true
+                  typeIdentifier: PodNamespaceSelector
+                  selector:
+                    pod:
+                      "*": "*"
+                    namespace:
+                      "*": "*"
+              destinationPort: "43"
+              protocolType: "ALL"
+          deniedCommunications:
+            - name: "AuthorizationDeny_1"
+              source:
+                resourceSelector:
+                  isHotCluster: true
+                  typeIdentifier: PodNamespaceSelector
+                  selector:
+                    pod:
+                      "*": "*"
+                    namespace:
+                      "*": "*"
+              destination:
+                resourceSelector:
+                  isHotCluster: false
+                  typeIdentifier: CIDRSelector
+                  selector: "0.0.0.0/20"
+              destinationPort: "*"
+              protocolType: "ALL"
+            - name: "AuthorizationDeny_2"
+              source:
+                resourceSelector:
+                  isHotCluster: true
+                  typeIdentifier: PodNamespaceSelector
+                  selector:
+                    pod:
+                      "*": "*"
+                    namespace:
+                      "*": "*"
+              destination:
+                resourceSelector:
+                  isHotCluster: false
+                  typeIdentifier: PodNamespaceSelector
+                  selector:
+                    pod:
+                      "*": "*"
+                    namespace:
+                      name: "handle-payments"
+              destinationPort: "*"
+              protocolType: "SCTP"
+            - name: "AuthorizationDeny_3"
+              source:
+                resourceSelector:
+                  isHotCluster: true
+                  typeIdentifier: PodNamespaceSelector
+                  selector:
+                    pod:
+                      "*": "*"
+                    namespace:
+                      "*": "*"
+              destination:
+                resourceSelector:
+                  isHotCluster: false
+                  typeIdentifier: PodNamespaceSelector
+                  selector:
+                    pod:
+                      "*": "*"
+                    namespace:
+                      name: "handle-payments"
+              destinationPort: "0-79"
+              protocolType: "TCP"
+            - name: "AuthorizationDeny_4"
+              source:
+                resourceSelector:
+                  isHotCluster: true
+                  typeIdentifier: PodNamespaceSelector
+                  selector:
+                    pod:
+                      "*": "*"
+                    namespace:
+                      "*": "*"
+              destination:
+                resourceSelector:
+                  isHotCluster: false
+                  typeIdentifier: PodNamespaceSelector
+                  selector:
+                    pod:
+                      "*": "*"
+                    namespace:
+                      name: "handle-payments"
+              destinationPort: "0-79"
+              protocolType: "UDP"
+            - name: "AuthorizationDeny_5"
+              source:
+                resourceSelector:
+                  isHotCluster: true
+                  typeIdentifier: PodNamespaceSelector
+                  selector:
+                    pod:
+                      "*": "*"
+                    namespace:
+                      "*": "*"
+              destination:
+                resourceSelector:
+                  isHotCluster: false
+                  typeIdentifier: PodNamespaceSelector
+                  selector:
+                    pod:
+                      "*": "*"
+                    namespace:
+                      name: "handle-payments"
+              destinationPort: "86-100"
+              protocolType: "UDP"
+      policies:
+        partitionability:
+          cpuMin: "0"
+          cpuStep: "1"
+          gpuMin: "0"
+          gpuStep: "0"
+          memoryMin: "0"
+          memoryStep: 100Mi
+          podsMin: "0"
+          podsStep: "0"
+    typeIdentifier: K8Slice
+  location:
+    additionalNotes: None
+    city: Turin
+    country: Italy
+    latitude: "10"
+    longitude: "58"
+  networkPropertyType: networkProperty
+  owner:
+    domain: fluidos.eu
+    ip: "172.18.0.7:30001"
+    nodeID: "wk4cmuxveu"
+  price:
+    amount: ""
+    currency: ""
+    period: ""
+  providerID: "wk4cmuxveu"

@@ -1,0 +1,9 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: flavors-cluster-role
+  namespace: fluidos
+rules:
+- apiGroups: ["nodecore.fluidos.eu"]
+  resources: ["flavors"]
+  verbs: ["get", "list", "watch"]

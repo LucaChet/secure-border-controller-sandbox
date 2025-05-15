@@ -1,0 +1,22 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: secure-border-controller
+  namespace: fluidos
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: secure-border-controller
+  template:
+    metadata:
+      labels:
+        app: secure-border-controller
+    spec:
+      serviceAccountName: custom-controller
+      containers:
+      - name: secure-border-controller
+        image: fpizzato/border-protection:0.1.0
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8080

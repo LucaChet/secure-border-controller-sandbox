@@ -1,0 +1,13 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: "network-policies-cluster-role-binding-2"
+  namespace: fluidos
+subjects:
+- kind: ServiceAccount
+  name: "custom-controller"
+  namespace: fluidos
+roleRef:
+  kind: ClusterRole
+  name: "network-policies-cluster-role"
+  apiGroup: rbac.authorization.k8s.io

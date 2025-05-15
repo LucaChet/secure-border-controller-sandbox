@@ -1,0 +1,28 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: app-payment-1
+  namespace: payments
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: app-payment-1
+  template:
+    metadata:
+      labels:
+        app: app-payment-1
+    spec:
+      containers:
+      - name: busybox
+        image: busybox
+        command: ["/bin/sh", "-c", "while true; do echo hello; sleep 10; done"]
+        ports:
+        - containerPort: 43
+        resources:
+          requests:
+            memory: "16Mi"
+            cpu: "10m"
+          limits:
+            memory: "32Mi"
+            cpu: "20m"

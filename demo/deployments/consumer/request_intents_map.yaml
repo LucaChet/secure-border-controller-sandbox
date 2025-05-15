@@ -1,0 +1,103 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: network-intents-example
+  namespace: payments
+data:
+  name: "example-intent"
+  isCNF: "true"
+  priority: "3000"
+  action: Allow
+  acceptMonitoring: "true"
+  networkIntents: |
+    [
+    {
+      "source": {
+        "resourceSelector": {
+          "isHotCluster": false,
+          "typeIdentifier": "PodNamespaceSelector",
+          "selector": {
+            "pod": {
+              "app": "app-payment-1"
+            },
+            "namespace": {
+              "name": "payments"
+            }
+          }
+        }
+      },
+      "destination": {
+        "resourceSelector": {
+          "isHotCluster": true,
+          "typeIdentifier": "PodNamespaceSelector",
+          "selector": {
+            "pod": {
+              "*": "*"
+            },
+            "namespace": {
+              "*": "*"
+            }
+          }
+        }
+      },
+      "destinationPort": "80",
+      "protocolType": "TCP"
+    },
+    {
+      "source": {
+        "resourceSelector": {
+          "isHotCluster": false,
+          "typeIdentifier": "PodNamespaceSelector",
+          "selector": {
+            "pod": {
+              "app": "app-payment-2"
+            },
+            "namespace": {
+              "name": "payments"
+            }
+          }
+        }
+      },
+      "destination": {
+        "resourceSelector": {
+          "isHotCluster": true,
+          "typeIdentifier": "PodNamespaceSelector",
+          "selector": {
+            "pod": {
+              "*": "*"
+            },
+            "namespace": {
+              "*": "*"
+            }
+          }
+        }
+      },
+      "destinationPort": "90",
+      "protocolType": "TCP"
+    },
+    {
+      "source": {
+        "resourceSelector": {
+          "isHotCluster": false,
+          "typeIdentifier": "PodNamespaceSelector",
+          "selector": {
+            "pod": {
+              "app": "*"
+            },
+            "namespace": {
+              "name": "products"
+            }
+          }
+        }
+      },
+      "destination": {
+        "resourceSelector": {
+          "isHotCluster": true,
+          "typeIdentifier": "CIDRSelector",
+          "selector": "130.192.0.0/16"
+        }
+      },
+      "destinationPort": "*",
+      "protocolType": "ALL"
+    }
+    ]

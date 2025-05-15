@@ -1,0 +1,35 @@
+apiVersion: reservation.fluidos.eu/v1alpha1
+kind: Reservation
+metadata:
+  name: reservation-sample
+  namespace: fluidos
+spec:
+  solverID: solver-sample
+  # Set it as you want, following needs and requests in the solver.
+  # Optional
+  configuration:
+    # Be sure to use the same type of the peeringCandidate
+    type: K8Slice
+    # Be sure to use values that are in the range of the peeringCandidate
+    data:
+      cpu: 1000m
+      memory: 1Gi
+      pods: "110"
+  # Retrieve from PeeringCandidate chosen to reserve
+  peeringCandidate:
+    name: "peeringcandidate-fluidos.eu-k8slice-demo-3"
+    namespace: fluidos
+  # Set it to reserve
+  reserve: true
+  # Set it to purchase after reservation is completed and you have a transaction
+  purchase: true
+  # Retrieve from PeeringCandidate Flavor Owner field    
+  seller:
+    domain: fluidos.eu
+    ip: "172.18.0.7:30001"
+    nodeID: "wk4cmuxveu"
+  # Retrieve from configmap
+  buyer:
+    domain: fluidos.eu
+    ip: "172.18.0.6"
+    nodeID: "lxeh2pnrdp"
