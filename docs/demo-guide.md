@@ -1,4 +1,9 @@
 # Protected Borders – Demo Guide
+<p align="center">
+  <a href="https://www.youtube.com/watch?v=7NBoORvkJ5U&t=34s" target="_blank">
+    <img src="./images/demo_cover.png" alt="Watch the demo" width="600"/>
+  </a>
+</p>
 
 This document provides a guided walkthrough of the demo workflow showcasing the **Secure Border Controller**.
 

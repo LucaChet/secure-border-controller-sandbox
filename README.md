@@ -1,4 +1,7 @@
 # Secure Border Controller for FLUIDOS
+<p align="center">
+  <img src="./docs/images/Fluidos_logo.png" alt="Architecture Diagram"/>
+</p>
 
 ## Overview
 The Secure Border Controller is a component developed within the FLUIDOS EU project, designed to enforce dynamic network policies within the computing continuum. In this context, upon workload offloading between different FLUIDOS nodes managed by Liqo, the secure border controller automatizes the verification, harmonization, translation and enforcement processes. These bring high-level network configuration intents expressed by the consumer into network policies ensuring compatibility with the provider's restrictions and rules.

@@ -49,7 +49,7 @@ Converts harmonized intents into valid Kubernetes **NetworkPolicy** resources an
 
 
 
-![Workflow Description](imgs/workflow_description.png)
+![Workflow Description](images/workflow_description.png)
 
 ---
 
