@@ -1,9 +1,14 @@
 # Protected Borders – Demo Guide
+## Watch the Demo:
+
 <p align="center">
   <a href="https://www.youtube.com/watch?v=7NBoORvkJ5U&t=34s" target="_blank">
     <img src="./images/demo_cover.png" alt="Watch the demo" width="600"/>
   </a>
 </p>
+
+--- 
+
 
 This document provides a guided walkthrough of the demo workflow showcasing the **Secure Border Controller**.
 
@@ -12,23 +17,54 @@ This document provides a guided walkthrough of the demo workflow showcasing the 
 ---
 
 ## Demo Setup – Step-by-Step
+### Prerequisites: 
+>  Important: The protected-border solution requires the FLUIDOS Node to be installed with a supported CNI. Currently, only Calico is supported, due to its advanced policy enforcement and full compatibility with Liqo.
 
+To enable Calico in the testbed environment, several files in the official FLUIDOS Node repository must be replaced with customized versions provided in this repository.
+
+| File to Replace                                              | Custom Version                                |
+| ------------------------------------------------------------ | --------------------------------------------- |
+| `node/tools/scripts/setup.sh`                                | `demo/resources/setup.sh`                     |
+| `node/tools/scripts/environment.sh`                          | `demo/resources/environment.sh`               |
+| `node/quickstart/kind/configs/standard.yaml`                         | `demo/resources/calico.yaml`                  |
+| *(new)* `node/quickstart/utils/calico-custom-resources.yaml` | `demo/resources/calico-custom-resources.yaml` |
+| *(new)* `node/quickstart/utils/tigera-operator.yaml` | `demo/resources/tigera-operator.yaml` |
+
+In order to replace the files, follow these steps:
+- Clone the [FLUIDOS Node](https://github.com/fluidos-project/node) repository and optionally backup the original files.
+- Copy the customized files from this repository to the corresponding locations in the FLUIDOS Node repository.
+```bash
+cd node
+cp <PATH_TO_DEMO_REPO>/demo/resources/setup.sh tools/scripts/setup.sh
+cp <PATH_TO_DEMO_REPO>/demo/resources/environment.sh tools/scripts/environment.sh
+cp <PATH_TO_DEMO_REPO>/demo/resources/calico.yaml quickstart/kind/configs/standard.yaml
+cp <PATH_TO_DEMO_REPO>/demo/resources/calico-custom-resources.yaml quickstart/utils/calico-custom-resources.yaml
+cp <PATH_TO_DEMO_REPO>/demo/resources/tigera-operator.yaml quickstart/utils/tigera-operator.yaml
+```
+- Ensure that the `node/tools/scripts/setup.sh` script is executable:
+```bash
+chmod +x node/tools/scripts/setup.sh
+```
 ### 1️⃣ Setup the Environment
 
-- Clone the FLUIDOS Node repository and go to its `tools/scripts` folder.
 - Execute the environment setup script:
 ```bash
-cd node/tools/scripts/
-./setup.sh
+
+./tools/scripts/setup.sh
 ```
 - Choose default settings (1, then confirm with y where prompted).
 - This will deploy two KinD clusters: Consumer and Provider, with Calico installed.
+- Next, move to the `demo` folder of this repository:
 
+- Set the `KUBECONFIG` environment variable to point to the Consumer/Provider cluster config files. These are contained in the `node/tools/script` folder of the FLUIDOS Node repository.:
+```bash
+export KUBECONFIG=<PATH_TO_NODE_DIR>/tools/script/fluidos-consumer-1-config
+```
+> NOTE: to interact with the Provider cluster, set `KUBECONFIG` to `fluidos-provider-1-config`. Avoid repeating this command by opening a new terminal and setting the `KUBECONFIG` variable there.
 ### 2️⃣ Configure Provider Flavors
 - Extract Provider information:
 ```bash
-export KUBECONFIG=fluidos-provider-1-config
-kubectl get cm fluidos-network-manager-identity -n fluidos -o yaml
+kubectl get cm fluidos-node-identity -n fluidos -o yaml
 ```
 - Copy:
   - `domain`
@@ -39,7 +75,7 @@ kubectl get cm fluidos-network-manager-identity -n fluidos -o yaml
   - `ProviderID` with `nodeID`
   - `domain` and `ip` fields
 
-> This is automated in the demo by `./demo/1_provider_setup.sh`.
+> NOTE: this is automated in the demo by `./demo/1_provider_setup.sh`.
 
 ### 3️⃣ Run Initial Setup Scripts
 
@@ -63,9 +99,19 @@ kubectl get cm fluidos-network-manager-identity -n fluidos -o yaml
 - Apply the Solver CR on the Consumer cluster:
 
 ```bash
-kubectl apply -f ./demo/solver-custom.yaml
+kubectl apply -f ./solver-custom.yaml
 ```
-- After this command, REAR processed the request and the Provider's Flavor should have been received by the Consumer in the form of PeeringCandidate. Once this happen, the protected-border controller starts a Verification phase to check the compatibility of the received Flavor with the requested one. 
+- After this command, REAR processed the request and the Provider's Flavor should have been received by the Consumer in the form of PeeringCandidate. Once this happen, the secure border controller starts a Verification phase to check the compatibility of the received Flavor with the requested one. 
+- You can inspect the Solver CR using:
+```bash
+kubectl get solver -n fluidos
+```
+- The received PeeringCandidates can be seen with the following command:
+
+```bash
+kubectl get peeringcandidates -n fluidos
+```
+
 - Check controller logs to monitor the verification process:
 
 ```bash
@@ -142,3 +188,20 @@ wget <destination-pod-ip>:<port>
 cd node/tools/scripts/
 ./cleanup.sh
 ```
+
+## Common Issues - Troubleshooting
+1. Liqo installation times out and gets rolled back. This is usually cauysed  by some of the resources not starting correctly, and can be proven with the command:
+```bash
+kubectl get pods -A
+```
+If some pods show 'ImagePullBackOff' or 'CrashLoopBackOff', you can check the logs of the pod with:
+```bash
+kubectl logs <pod-name> -n <namespace>
+```
+- The most common issue is that the default image registry (docker.io) imposes a rate limit on the number of requests. To solve this, you can either:
+  - Use a different image registry (e.g., ghcr.io)
+  - Use a local image registry
+  - Use a private image registry
+The following guide provides instruction on how to configure calico to use a different image registry:
+https://docs.tigera.io/calico/latest/operations/image-options/alternate-registry
+
