@@ -58,7 +58,7 @@ chmod +x node/tools/scripts/setup.sh
 
 - Set the `KUBECONFIG` environment variable to point to the Consumer/Provider cluster config files. These are contained in the `node/tools/script` folder of the FLUIDOS Node repository.:
 ```bash
-export KUBECONFIG=<PATH_TO_NODE_DIR>/tools/script/fluidos-consumer-1-config
+export KUBECONFIG=<PATH_TO_NODE_DIR>/tools/scripts/fluidos-consumer-1-config
 ```
 > NOTE: to interact with the Provider cluster, set `KUBECONFIG` to `fluidos-provider-1-config`. Avoid repeating this command by opening a new terminal and setting the `KUBECONFIG` variable there.
 ### 2️⃣ Configure Provider Flavors
