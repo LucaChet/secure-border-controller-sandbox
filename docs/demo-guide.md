@@ -205,3 +205,15 @@ kubectl logs <pod-name> -n <namespace>
 The following guide provides instruction on how to configure calico to use a different image registry:
 https://docs.tigera.io/calico/latest/operations/image-options/alternate-registry
 
+2. The `setup.sh` script fails silently upon KIND cluster creation.  Indeed, this setup relies on KIND (Kubernetes in Docker) to quickly establish a reliable testbed for testing the FLUIDOS Node architecture.
+
+There are common issues encountered when running multiple clusters with KIND, particularly related to swap space memory usage and resource limits within the operating systems.
+
+Therefore, it is highly recommended to run the following commands before proceeding with the installation process:
+
+```bash
+sudo swapoff -a
+sudo sysctl fs.inotify.max_user_instances=512
+sudo sysctl fs.inotify.max_user_watches=524288
+```
+
