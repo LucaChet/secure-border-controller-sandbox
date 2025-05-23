@@ -4,31 +4,29 @@
 </p>
 
 ## Overview
-The Secure Border Controller is a component developed within the FLUIDOS EU project, designed to enforce dynamic network policies within the computing continuum. In this context, upon workload offloading between different FLUIDOS nodes managed by Liqo, the secure border controller automatizes the verification, harmonization, translation and enforcement processes. These bring high-level network configuration intents expressed by the consumer into network policies ensuring compatibility with the provider's restrictions and rules.
+The Secure Border Controller (SBC), developed as part off the FLUIDOS EU project, delivers an intent-based border protection solution to secure dynamic workflows in the cloud-edge continuum. In this context, upon workload offloading between different FLUIDOS nodes, the secure border controller plays a critical role by automatically secure the resources before they are consumed. This solution involves several key features. The verification and harmonization processes ensure alignment between the consumer's security objectives and the provider's restrictions, automatically resolving any possible discordance. Following this, the  translation and enforcement processes refine the high-level network configuration intents defined by the consumer into low-level security primitives, i.e., Kubernetes Network Policies, while ensuring they remain compatible with the provider's restrictions and rules.
   
 ## Key Features
 - Support for high-level communication intents
 - Verification of the candidates potentially accommodating the consumer requests before peering and offloading
 - Reconciliation of Private and Request intents expressed by the consumer and Authorization intents expressed by the resources provider 
-- Guarantee of coherence and correctness of network configurations in a FLUIDOS context, without manual intervention
-- Automatized management of container isolation
+- Guarantee of coherence and correctness of network configurations thanks to a smart harmonization process
+- Automatized enforcement of container isolation
 
 ## Requirements
 To deploy and use the Secure Border Controller, the following prerequisites must be satisfied:
 
-- **FLUIDOS Node Installation**:  
-  The SBC integrates with a working installation of a **FLUIDOS Node**. You can find the FLUIDOS Node repository here: [https://github.com/FLUIDOS-Project/fluidos-node](https://fluidos-project.github.io/node/).
-
 - **Kubernetes Cluster**:  
-  The SBC component interact with a Kubernetes cluster either acting as consumer or as provider.
+  The SBC component interact with a Kubernetes cluster.
+
+- **FLUIDOS Node Installation**:  
+  The SBC integrates with a working installation of the [FLUIDOS Node](https://fluidos-project.github.io/node/).
 
 - **Container Network Interface (CNI)**:  
-  The SBC relies on Kubernetes Network Policies for intent enforcement. Currently, only **Calico** is fully supported and tested as the CNI plugin.
-  
-> **Note**: Support for additional CNI providers may be considered in future iterations.
+  The SBC relies on Kubernetes Network Policies for enforcing network isolation. Even if the design could be easily extended to multiple CNIs, only **Calico** is currentyl supported.
 
 - **Intents Formulation**:
-  The SBC is based on Private and Request intents from the consumer and on Authorization intents from the provider. They must be formulated as defined in the [intent documentation](./docs/intent-mspl.md).
+  The SBC is based on multiple intent sets, i.e., Private and Request intents from the consumer and on Authorization intents from the provider. These intents must adhere to the schema defined in the [intent documentation](./docs/intent-mspl.md).
   
 ## Quick Start
 This section provides a high-level guide to integrate the SBC with an existing FLUIDOS Node deployment.
@@ -46,17 +44,17 @@ This section provides a high-level guide to integrate the SBC with an existing F
 ```bash
 kubectl create serviceaccount custom-controller -n fluidos
 ```
-- Create all the needed roles/clusterRoles and bindings
+- Create all the needed roles/clusterRoles and bindings (TODO: add the necessary RBAC files for easy deployment)
 - Deploy the SBC using its manifest
 ```bash
 kubectl apply -f ./custom-controller.yaml
 ```
 4️⃣ Run the Demo Example (Optional)
-- You can test the integration with a demo workflow provided in the `demo/` folder, by following the guide available at `docs/demo-guide.md`
+- You can test the integration with a demo provided in the `demo/` folder, by following the guide available at `docs/demo-guide.md`. A public recording showcasing the demo is also available [here](https://www.youtube.com/watch?v=7NBoORvkJ5U&t=34s).
 
-## Repository Structure
-- `controller-code/`: Core implementation of the SBC.
-- `docs/`: Technical documentation and guides.
-- `demo/`: Implementation of a demo workflow
+## Papers
+- F. Pizzato, D. Bringhenti, R. Sisto and F. Valenza, "*An intent-based solution for network isolation in Kubernetes,*" 2024 IEEE 10th International Conference on Network Softwarization (NetSoft), Saint Louis, MO, USA, 2024, pp. 381-386, doi: 10.1109/NetSoft60951.2024.10588939 [[link](https://ieeexplore.ieee.org/abstract/document/10588939)]
+- F. Pizzato, D. Bringhenti, R. Sisto and F. Valenza, “*Workload isolation through intent-based network management for the future of computing continuum*”, under review in IEEE Internet Computing.
+- F. Pizzato, D. Bringhenti, R. Sisto and F. Valenza, “*Intent-driven network isolation for the cloud computing continuum*”, under review in Journal of Network and Systems Management.
 
 ---
