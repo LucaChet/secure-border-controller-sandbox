@@ -12,15 +12,14 @@
 
 This document provides a guided walkthrough of the demo workflow showcasing the **Secure Border Controller**.
 
-> **Note:** The demo requires an installation of the [FLUIDOS Node](https://github.com/fluidos-project/node) with a supported CNI. At the moment, only **Calico** is supported. Please refer to the FLUIDOS Node documentation for base setup instructions.
-
 ---
 
 ## Demo Setup – Step-by-Step
 ### Prerequisites: 
->  Important: The protected-border solution requires the FLUIDOS Node to be installed with a supported CNI. Currently, only Calico is supported, due to its advanced policy enforcement and full compatibility with Liqo.
 
-To enable Calico in the testbed environment, several files in the official FLUIDOS Node repository must be replaced with customized versions provided in this repository.
+The demo requires an installation of the [FLUIDOS Node](https://github.com/fluidos-project/node) with a supported CNI. At the moment, only **Calico** is supported. Please refer to the FLUIDOS Node documentation for base setup instructions.
+
+In this demo, it will be used the same testbed with KinD which is used in the FLUIDOS Node repository. However, to enable Calico in the testbed environment, several files in the official FLUIDOS Node repository must be created or replaced with customized versions provided in this repository.
 
 | File to Replace                                              | Custom Version                                |
 | ------------------------------------------------------------ | --------------------------------------------- |
@@ -30,16 +29,16 @@ To enable Calico in the testbed environment, several files in the official FLUID
 | *(new)* `node/quickstart/utils/calico-custom-resources.yaml` | `demo/resources/calico-custom-resources.yaml` |
 | *(new)* `node/quickstart/utils/tigera-operator.yaml` | `demo/resources/tigera-operator.yaml` |
 
-In order to replace the files, follow these steps:
+Before moving on, follow these steps:
 - Clone the [FLUIDOS Node](https://github.com/fluidos-project/node) repository and optionally backup the original files.
 - Copy the customized files from this repository to the corresponding locations in the FLUIDOS Node repository.
 ```bash
 cd node
-cp <PATH_TO_DEMO_REPO>/demo/resources/setup.sh tools/scripts/setup.sh
-cp <PATH_TO_DEMO_REPO>/demo/resources/environment.sh tools/scripts/environment.sh
-cp <PATH_TO_DEMO_REPO>/demo/resources/calico.yaml quickstart/kind/configs/standard.yaml
-cp <PATH_TO_DEMO_REPO>/demo/resources/calico-custom-resources.yaml quickstart/utils/calico-custom-resources.yaml
-cp <PATH_TO_DEMO_REPO>/demo/resources/tigera-operator.yaml quickstart/utils/tigera-operator.yaml
+cp <PATH_TO_SBC_REPO>/demo/resources/setup.sh tools/scripts/setup.sh
+cp <PATH_TO_SBC_REPO>/demo/resources/environment.sh tools/scripts/environment.sh
+cp <PATH_TO_SBC_REPO>/demo/resources/calico.yaml quickstart/kind/configs/standard.yaml
+cp <PATH_TO_SBC_REPO>/demo/resources/calico-custom-resources.yaml quickstart/utils/calico-custom-resources.yaml
+cp <PATH_TO_SBC_REPO>/demo/resources/tigera-operator.yaml quickstart/utils/tigera-operator.yaml
 ```
 - Ensure that the `node/tools/scripts/setup.sh` script is executable:
 ```bash
@@ -55,14 +54,17 @@ chmod +x node/tools/scripts/setup.sh
 - Choose default settings (1, then confirm with y where prompted).
 - This will deploy two KinD clusters: Consumer and Provider, with Calico installed.
 - Next, move to the `demo` folder of this repository:
+```bash
+cd <PATH_TO_SBC_REPO>/demo
+```
 
 - Set the `KUBECONFIG` environment variable to point to the Consumer/Provider cluster config files. These are contained in the `node/tools/script` folder of the FLUIDOS Node repository.:
 ```bash
-export KUBECONFIG=<PATH_TO_NODE_DIR>/tools/scripts/fluidos-consumer-1-config
+export KUBECONFIG=<PATH_TO_NODE_REPO>/tools/scripts/fluidos-consumer-1-config
 ```
 > NOTE: to interact with the Provider cluster, set `KUBECONFIG` to `fluidos-provider-1-config`. Avoid repeating this command by opening a new terminal and setting the `KUBECONFIG` variable there.
 ### 2️⃣ Configure Provider Flavors
-- Extract Provider information:
+- All the following are intended to be executed within the provider's cluster. Extract Provider information:
 ```bash
 kubectl get cm fluidos-node-identity -n fluidos -o yaml
 ```
@@ -132,7 +134,7 @@ kubectl logs <consumer-controller-pod> -n fluidos
   - Updates `reservation.yaml` with information from ConfigMaps (Consumer details) and PeeringCandidate (Provider details)
   - Applies Reservation and Allocation CRs
 
-  ### 6️⃣ Patch the Contract
+### 6️⃣ Patch the Contract
 - To pass the Consumer's Request intents to the Provider, the demo uses a Kubernetes ConfigMap that is automatically reflected on both clusters thanks to Liqo. 
 - On the Provider cluster:
 
