@@ -50,7 +50,7 @@ kubectl create serviceaccount custom-controller -n fluidos
 kubectl apply -f ./custom-controller.yaml
 ```
 4️⃣ Run the Demo Example (Optional)
-- You can test the integration with a demo provided in the `demo/` folder, by following the guide available at `docs/demo-guide.md`. A public recording showcasing the demo is also available [here](https://www.youtube.com/watch?v=7NBoORvkJ5U&t=34s).
+- You can test the integration with a demo provided in the `demo/` folder, by following the provided [demo-guide](./docs/demo-guide.md). A public recording showcasing the demo is also available [here](https://www.youtube.com/watch?v=7NBoORvkJ5U&t=34s).
 
 ## Papers
 - F. Pizzato, D. Bringhenti, R. Sisto and F. Valenza, "*An intent-based solution for network isolation in Kubernetes,*" 2024 IEEE 10th International Conference on Network Softwarization (NetSoft), Saint Louis, MO, USA, 2024, pp. 381-386, doi: 10.1109/NetSoft60951.2024.10588939 [[link](https://ieeexplore.ieee.org/abstract/document/10588939)]
