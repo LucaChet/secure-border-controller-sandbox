@@ -40,11 +40,14 @@ This section provides a high-level guide to integrate the SBC with an existing K
   git clone https://github.com/netgroup-polito/secure-border-controller.git
   cd secure-border-controller
 ```
-- Create Service Account for the custom controller:
+- Create Service Account for the SBC:
 ```bash
-kubectl create serviceaccount custom-controller -n fluidos
+kubectl create serviceaccount secure-border-controller -n fluidos
 ```
-- Create all the needed roles/clusterRoles and bindings (TODO: add the necessary RBAC files for easy deployment)
+- Create all the needed roles/clusterRoles and bindings
+```bash
+kubectl apply -f ./demo/serviceAccounts
+```
 - Deploy the SBC using its manifest
 ```bash
 kubectl apply -f ./secure-border-controller.yaml

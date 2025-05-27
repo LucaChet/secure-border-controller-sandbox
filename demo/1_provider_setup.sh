@@ -1,4 +1,3 @@
-#export KUBECONFIG=../demo_da_presentare/node-main/tools/scripts/fluidos-provider-1-config
 echo " [+] In PROVIDER cluster..."
 # Populate the provider cluster with the initial resources
 echo " [+] Creating namespaces and deployments"
@@ -12,12 +11,12 @@ echo ""
 sleep 2
 
 # Deploy the custom controller
-echo "[+] Creating Service Accont for the custom controller"
-kubectl create serviceaccount custom-controller -n fluidos
+echo "[+] Creating Service Accont for the secure border controller"
+kubectl create serviceaccount secure border controller -n fluidos
 echo "[+] Creating all the needed roles/clusterRoles and bindings"
 kubectl apply -f ./serviceAccounts
-echo "[+] Deploying the custom controller"
-kubectl apply -f ./custom-controller.yaml
+echo "[+] Deploying the secure border controller"
+kubectl apply -f ./secure-border-controller.yaml
 
 echo ""
 sleep 2

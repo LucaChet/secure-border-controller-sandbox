@@ -5,7 +5,7 @@ metadata:
   namespace: fluidos
 subjects:
 - kind: ServiceAccount
-  name: "custom-controller"
+  name: "secure-border-controller"
   namespace: fluidos
 roleRef:
   kind: ClusterRole

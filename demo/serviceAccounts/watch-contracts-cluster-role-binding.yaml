@@ -9,5 +9,5 @@ roleRef:
   name: contracts-cluster-role
 subjects:
 - kind: ServiceAccount
-  name: custom-controller
+  name: secure-border-controller
   namespace: fluidos

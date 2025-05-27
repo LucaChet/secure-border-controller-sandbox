@@ -16,11 +16,3 @@ kubectl apply -f ./deployments/consumer/request_intents_map.yaml
 
 echo ""
 sleep 3
-
-#echo "[+] In PROVIDER cluster..."
-#export KUBECONFIG=../demo_da_presentare/node-main/tools/scripts/fluidos-provider-1-config
-
-#echo "[+] Check border-protection-controller logs for HARMONIZE+TRANSLATION result."
-#sleep 3
-#pod_name=$(kubectl get pods -n fluidos | grep ^secure-border-controller | awk '{print $1}')
-#kubectl logs -n fluidos $pod_name

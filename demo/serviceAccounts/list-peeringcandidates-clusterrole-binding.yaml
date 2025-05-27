@@ -4,7 +4,7 @@ metadata:
   name: peeringcandidates-binding
 subjects:
 - kind: ServiceAccount
-  name: "custom-controller"
+  name: "secure-border-controller"
   namespace: fluidos  
 roleRef:
   kind: ClusterRole

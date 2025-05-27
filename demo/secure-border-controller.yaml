@@ -13,7 +13,7 @@ spec:
       labels:
         app: secure-border-controller
     spec:
-      serviceAccountName: custom-controller
+      serviceAccountName: secure-border-controller
       containers:
       - name: secure-border-controller
         image: fpizzato/border-protection:0.1.0
