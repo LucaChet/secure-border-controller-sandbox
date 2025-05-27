@@ -68,23 +68,8 @@ cd <PATH_TO_SBC_REPO>/demo
 export KUBECONFIG=<PATH_TO_NODE_REPO>/tools/scripts/fluidos-consumer-1-config
 ```
 > NOTE: to interact with the Provider cluster, set `KUBECONFIG` to `fluidos-provider-1-config`. Avoid repeating this command by opening a new terminal and setting the `KUBECONFIG` variable there.
-### 2️⃣ Configure Provider Flavors
-- All the following are intended to be executed within the provider's cluster. Extract Provider information:
-```bash
-kubectl get cm fluidos-node-identity -n fluidos -o yaml
-```
-- Copy:
-  - `domain`
-  - `ip`
-  - `nodeID`
 
-- Edit the YAML files in `demo/flavors/`, updating:
-  - `ProviderID` with `nodeID`
-  - `domain` and `ip` fields
-
-> NOTE: this is automated in the demo by `./1_provider_setup.sh`.
-
-### 3️⃣ Run Initial Setup Scripts
+### 2️⃣ Run Initial Setup Scripts
 
 - From the `demo/` folder:
 
@@ -99,9 +84,9 @@ kubectl get cm fluidos-node-identity -n fluidos -o yaml
   - Set up namespaces and pods both uin the Consumer and Provider clusters
   - Create the necessary Service Accounts
   - Deploy the controller
-  - In the Provider, Flavors are updated
+  - In the Provider, Flavors are updated by inserting the ```ip```, ```nodeId``` and ```providerId```. They are then applied with AuthorizationIntents data
 
-  ### 4️⃣ Trigger the Peering Process
+  ### 3️⃣ Trigger the Peering Process
 
 - Apply the Solver CR on the Consumer cluster:
 
@@ -127,7 +112,7 @@ kubectl logs <consumer-controller-pod> -n fluidos
 ```
 > Wait ~20 seconds after applying the CR.
 
-### 5️⃣ Reservation and Allocation
+### 4️⃣  Reservation and Allocation
 - Given the result of the verification, one of the received PeeringCandidate needs to be selected to proceed with the reservation and acquisition process.
 - From the Consumer side:
 
@@ -144,7 +129,7 @@ kubectl logs <consumer-controller-pod> -n fluidos
 kubectl get reservation -n fluidos
 ```
 
-### 6️⃣ Patch the Contract
+### 5️⃣  Patch the Contract
 - To pass the Consumer's Request intents to the Provider, the demo uses a Kubernetes ConfigMap that is automatically reflected on both clusters thanks to Liqo. 
 - On the Provider cluster:
 
@@ -157,7 +142,7 @@ kubectl get reservation -n fluidos
   - Injects the name of a shared ConfigMap
   - Creates the ConfigMap containing Request intents
 
-### 7️⃣ Resource Offloading and Harmonization
+### 6️⃣ Resource Offloading and Harmonization
 - The Consumer offloads its resources on the peered cluster and the Secure Border Controller on the Provider will perform harmonization, translation and enforcement of the proper intens (starting from the Requested intents in the ConfigMap, and the Authorization intents of the selected Flavor).
 - On the Consumer cluster:
 
