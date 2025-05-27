@@ -30,12 +30,19 @@ echo "[+] Applying the modified reservation"
 kubectl apply -f $path_reservation
 
 echo ""
+kubectl get reservation -n fluidos
+
+
+reservation_name=$(kubectl get reservation -n fluidos | grep sample | awk '{print $1}')
+echo ""
+until kubectl get reservation reservation-sample -n fluidos -o jsonpath='{.status.contract.name}' 2>/dev/null | grep -q .; do
+  echo "Waiting for contract to be created..."
+  sleep 5
+done
 
 echo "[+] Check reservation status."
 kubectl get reservation -n fluidos 
 
-
-reservation_name=$(kubectl get reservation -n fluidos | grep sample | awk '{print $1}')
 contract_name=$(kubectl get reservation $reservation_name -n fluidos -o jsonpath='{.status.contract.name}')
 
 path_allocation="./allocation.yaml"
