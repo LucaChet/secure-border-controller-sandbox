@@ -117,7 +117,7 @@ kubectl logs <consumer-controller-pod> -n fluidos
 - From the Consumer side:
 
 ```bash
-./3_reservation_and_allocation.sh <peeringCandidate-name>
+./2_reservation_and_allocation.sh <peeringCandidate-name>
 ```
 
 - The script:
@@ -134,7 +134,7 @@ kubectl get reservation -n fluidos
 - On the Provider cluster:
 
 ```bash
-./4_patch_contract.sh
+./3_patch_contract.sh
 ```
 
 - This:
@@ -147,7 +147,7 @@ kubectl get reservation -n fluidos
 - On the Consumer cluster:
 
 ```bash
-./5_harmonize.sh
+./4_harmonize.sh
 ```
 
 - Once the namespace is offloaded, the Provider’s controller will:
