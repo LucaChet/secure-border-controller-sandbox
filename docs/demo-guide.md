@@ -188,7 +188,7 @@ wget <destination-pod-ip>:<port>
 
 ```bash
 cd node/tools/scripts/
-./cleanup.sh
+./clean-dev-env.sh
 ```
 
 ## Common Issues - Troubleshooting
