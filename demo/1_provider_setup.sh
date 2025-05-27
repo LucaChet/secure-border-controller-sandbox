@@ -12,7 +12,7 @@ sleep 2
 
 # Deploy the custom controller
 echo "[+] Creating Service Accont for the secure border controller"
-kubectl create serviceaccount secure border controller -n fluidos
+kubectl create serviceaccount secure-border-controller -n fluidos
 echo "[+] Creating all the needed roles/clusterRoles and bindings"
 kubectl apply -f ./serviceAccounts
 echo "[+] Deploying the secure border controller"
