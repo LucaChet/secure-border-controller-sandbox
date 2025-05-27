@@ -86,7 +86,7 @@ export KUBECONFIG=<PATH_TO_NODE_REPO>/tools/scripts/fluidos-consumer-1-config
   - Deploy the controller
   - In the Provider, Flavors are updated by inserting the ```ip```, ```nodeId``` and ```providerId```. They are then applied with AuthorizationIntents data
 
-  ### 3️⃣ Trigger the Peering Process
+### 3️⃣ Trigger the Peering Process
 
 - Apply the Solver CR on the Consumer cluster:
 
