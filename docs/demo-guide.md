@@ -88,6 +88,11 @@ export KUBECONFIG=<PATH_TO_NODE_REPO>/tools/scripts/fluidos-consumer-1-config
 
 ### 3️⃣ Trigger the Peering Process
 
+- Wait for the SBC to be running, this can be confirmed with the command:
+
+```bash
+kubectl get pods -n fluidos
+```
 - Apply the Solver CR on the Consumer cluster:
 
 ```bash
