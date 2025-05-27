@@ -1,9 +1,10 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <ITResourceOrchestration xmlns="http://modeliosoft/xsddesigner/a22bd60b-ee3d-425c-8618-beb6a854051a/ITResource.xsd"
-                         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="omspl_5b0fd7359a5e40fe92399710c1152ed9"
-                         xsi:schemaLocation="http://modeliosoft/xsddesigner/a22bd60b-ee3d-425c-8618-beb6a854051a/ITResource.xsd ../xsd/mspl.xsd">
+                         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                         xsi:schemaLocation="http://modeliosoft/xsddesigner/a22bd60b-ee3d-425c-8618-beb6a854051a/ITResource.xsd ../xsd/mspl.xsd"
+                         id="example-mspl">
 
-    <!-- Request Intents -->
+    <!-- ✅ Request Intent -->
     <ITResource>
         <configuration xsi:type="RequestIntents">
             <capability>
@@ -11,8 +12,8 @@
             </capability>
             <acceptMonitoring>true</acceptMonitoring>
 
-            <!-- from "app:order_placement" to "*", ALL  -->
             <configurationRule>
+                <Name>RequestIntent_Example</Name>
                 <configurationRuleAction xsi:type="KubernetesNetworkFilteringAction">
                     <KubernetesNetworkFilteringActionType>ALLOW</KubernetesNetworkFilteringActionType>
                 </configurationRuleAction>
@@ -22,114 +23,144 @@
                         <isHostCluster>false</isHostCluster>
                         <pod>
                             <key>app</key>
-                            <value>order_placement</value>
+                            <value>client</value>
                         </pod>
                         <namespace>
                             <key>name</key>
                             <value>fluidos</value>
                         </namespace>
                     </source>
-                    <sourcePort>*</sourcePort>
-                    <destination xsi:type="PodNamespaceSelector">
-                        <isHostCluster>true</isHostCluster>
-                        <pod>
-                            <key>*</key>
-                            <value>*</value>
-                        </pod>
-                        <namespace>
-                            <key>*</key>
-                            <value>*</value>
-                        </namespace>
-                    </destination>
-                    <destinationPort>*</destinationPort>
-                    <protocolType>ALL</protocolType>
-                </configurationCondition>
-                <externalData xsi:type="Priority">
-                    <value>60000</value>
-                </externalData>
-                <Name>RequestIntent_1</Name>
-                <isCNF>false</isCNF>
-            </configurationRule>
-            <!-- from "app:help_desk" to "*", ALL  -->
-            <configurationRule>
-                <configurationRuleAction xsi:type="KubernetesNetworkFilteringAction">
-                    <KubernetesNetworkFilteringActionType>ALLOW</KubernetesNetworkFilteringActionType>
-                </configurationRuleAction>
-                <configurationCondition xsi:type="KubernetesNetworkFilteringCondition">
-                    <isCNF>false</isCNF>
-                    <source xsi:type="PodNamespaceSelector">
-                        <isHostCluster>false</isHostCluster>
-                        <pod>
-                            <key>app</key>
-                            <value>help_desk</value>
-                        </pod>
-                        <namespace>
-                            <key>name</key>
-                            <value>turin</value>
-                        </namespace>
-                    </source>
-                    <sourcePort>*</sourcePort>
-                    <destination xsi:type="PodNamespaceSelector">
-                        <isHostCluster>true</isHostCluster>
-                        <pod>
-                            <key>*</key>
-                            <value>*</value>
-                        </pod>
-                        <namespace>
-                            <key>*</key>
-                            <value>*</value>
-                        </namespace>
-                    </destination>
-                    <destinationPort>*</destinationPort>
-                    <protocolType>ALL</protocolType>
-                </configurationCondition>
-                <externalData xsi:type="Priority">
-                    <value>60000</value>
-                </externalData>
-                <Name>RequestIntent_2</Name>
-                <isCNF>false</isCNF>
-            </configurationRule>
-            <!-- from "app:bank_payment" to ANY, ALL -->
-            <configurationRule>
-                <configurationRuleAction xsi:type="KubernetesNetworkFilteringAction">
-                    <KubernetesNetworkFilteringActionType>ALLOW</KubernetesNetworkFilteringActionType>
-                </configurationRuleAction>
-                <configurationCondition xsi:type="KubernetesNetworkFilteringCondition">
-                    <isCNF>false</isCNF>
-                    <source xsi:type="PodNamespaceSelector">
-                        <isHostCluster>false</isHostCluster>
-                        <pod>
-                            <key>app</key>
-                            <value>bank_payment</value>
-                        </pod>
-                        <namespace>
-                            <key>name</key>
-                            <value>turin</value>
-                        </namespace>
-                    </source>
-                    <sourcePort>*</sourcePort>
                     <destination xsi:type="CIDRSelector">
                         <isHostCluster>true</isHostCluster>
                         <addressRange>0.0.0.0/0</addressRange>
                     </destination>
+                    <sourcePort>*</sourcePort>
+                    <destinationPort>443</destinationPort>
+                    <protocolType>TCP</protocolType>
+                </configurationCondition>
+                <externalData xsi:type="Priority">
+                    <value>10000</value>
+                </externalData>
+                <isCNF>false</isCNF>
+            </configurationRule>
+        </configuration>
+    </ITResource>
+
+    <!-- 🔒 Private Intent -->
+    <ITResource>
+        <configuration xsi:type="PrivateIntents">
+            <capability>
+                <Name>KubernetesNetworkFiltering</Name>
+            </capability>
+
+            <configurationRule>
+                <Name>PrivateIntent_Example</Name>
+                <configurationRuleAction xsi:type="KubernetesNetworkFilteringAction">
+                    <KubernetesNetworkFilteringActionType>DENY</KubernetesNetworkFilteringActionType>
+                </configurationRuleAction>
+                <configurationCondition xsi:type="KubernetesNetworkFilteringCondition">
+                    <isCNF>false</isCNF>
+                    <source xsi:type="PodNamespaceSelector">
+                        <isHostCluster>false</isHostCluster>
+                        <pod>
+                            <key>app</key>
+                            <value>internal-db</value>
+                        </pod>
+                        <namespace>
+                            <key>name</key>
+                            <value>monitoring</value>
+                        </namespace>
+                    </source>
+                    <destination xsi:type="CIDRSelector">
+                        <isHostCluster>false</isHostCluster>
+                        <addressRange>10.0.0.0/8</addressRange>
+                    </destination>
+                    <sourcePort>*</sourcePort>
                     <destinationPort>*</destinationPort>
                     <protocolType>ALL</protocolType>
                 </configurationCondition>
-                <externalData xsi:type="Priority">
-                    <value>60000</value>
-                </externalData>
-                <Name>RequestIntent_3</Name>
                 <isCNF>false</isCNF>
             </configurationRule>
-
         </configuration>
     </ITResource>
-    <!-- Now define Authorization Intents -->
+
+    <!-- ✅ Authorization Intent: Mandatory Communication -->
     <ITResource>
         <configuration xsi:type="AuthorizationIntents">
             <capability>
                 <Name>KubernetesNetworkFiltering</Name>
             </capability>
+            <mandatoryCommunication>
+                <Name>MandatoryCommunication_Example</Name>
+                <configurationRuleAction xsi:type="KubernetesNetworkFilteringAction">
+                    <KubernetesNetworkFilteringActionType>ALLOW</KubernetesNetworkFilteringActionType>
+                </configurationRuleAction>
+                <configurationCondition xsi:type="KubernetesNetworkFilteringCondition">
+                    <isCNF>false</isCNF>
+                    <source xsi:type="PodNamespaceSelector">
+                        <isHostCluster>true</isHostCluster>
+                        <pod>
+                            <key>app</key>
+                            <value>resource-monitor</value>
+                        </pod>
+                        <namespace>
+                            <key>name</key>
+                            <value>monitoring</value>
+                        </namespace>
+                    </source>
+                    <destination xsi:type="PodNamespaceSelector">
+                        <isHostCluster>false</isHostCluster>
+                        <pod>
+                            <key>*</key>
+                            <value>*</value>
+                        </pod>
+                        <namespace>
+                            <key>*</key>
+                            <value>*</value>
+                        </namespace>
+                    </destination>
+                    <sourcePort>*</sourcePort>
+                    <destinationPort>43</destinationPort>
+                    <protocolType>TCP</protocolType>
+                </configurationCondition>
+            </mandatoryCommunication>
+        </configuration>
+    </ITResource>
+
+    <!-- 🚫 Authorization Intent: Denied Communication -->
+    <ITResource>
+        <configuration xsi:type="AuthorizationIntents">
+            <capability>
+                <Name>KubernetesNetworkFiltering</Name>
+            </capability>
+            <deniedCommunication>
+                <Name>DeniedCommunication_Example</Name>
+                <configurationRuleAction xsi:type="KubernetesNetworkFilteringAction">
+                    <KubernetesNetworkFilteringActionType>DENY</KubernetesNetworkFilteringActionType>
+                </configurationRuleAction>
+                <configurationCondition xsi:type="KubernetesNetworkFilteringCondition">
+                    <isCNF>false</isCNF>
+                    <source xsi:type="PodNamespaceSelector">
+                        <isHostCluster>false</isHostCluster>
+                        <pod>
+                            <key>*</key>
+                            <value>*</value>
+                        </pod>
+                        <namespace>
+                            <key>*</key>
+                            <value>*</value>
+                        </namespace>
+                    </source>
+                    <destination xsi:type="CIDRSelector">
+                        <isHostCluster>false</isHostCluster>
+                        <addressRange>8.8.8.8/32</addressRange>
+                    </destination>
+                    <sourcePort>*</sourcePort>
+                    <destinationPort>53</destinationPort>
+                    <protocolType>UDP</protocolType>
+                </configurationCondition>
+            </deniedCommunication>
         </configuration>
     </ITResource>
 </ITResourceOrchestration>
+
