@@ -36,7 +36,7 @@ Before moving on, follow these steps:
 cd node
 cp <PATH_TO_SBC_REPO>/demo/resources/setup.sh tools/scripts/setup.sh
 cp <PATH_TO_SBC_REPO>/demo/resources/environment.sh tools/scripts/environment.sh
-cp <PATH_TO_SBC_REPO>/demo/resources/calico.yaml quickstart/kind/configs/standard.yaml
+cp <PATH_TO_SBC_REPO>/demo/resources/calico.yaml quickstart/kind/configs/calico.yaml
 cp <PATH_TO_SBC_REPO>/demo/resources/calico-custom-resources.yaml quickstart/utils/calico-custom-resources.yaml
 cp <PATH_TO_SBC_REPO>/demo/resources/tigera-operator.yaml quickstart/utils/tigera-operator.yaml
 ```

@@ -88,6 +88,7 @@ create_kind_clusters() {
                         echo "Failed to install Tigera Operator for Calico. Exiting..."
                         exit 1
                     fi
+		    kubectl wait --for=condition=available --timeout=300s deployment -n tigera-operator tigera-operator
                     kubectl create -f "$SCRIPT_DIR"/../../quickstart/utils/calico-custom-resources.yaml
                     if [ $? -ne 0 ]; then
                         echo "Failed to apply custom resources for Calico. Exiting..."
@@ -142,6 +143,7 @@ create_kind_clusters() {
                         echo "Failed to install Tigera Operator for Calico. Exiting..."
                         exit 1
                     fi
+		    kubectl wait --for=condition=available --timeout=300s deployment -n tigera-operator tigera-operator
                     kubectl create -f "$SCRIPT_DIR"/../../quickstart/utils/calico-custom-resources.yaml
                     if [ $? -ne 0 ]; then
                         echo "Failed to apply custom resources for Calico. Exiting..."

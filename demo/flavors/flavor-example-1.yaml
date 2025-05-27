@@ -151,10 +151,10 @@ spec:
   networkPropertyType: networkProperty
   owner:
     domain: fluidos.eu
-    ip: "172.18.0.7:30001"
-    nodeID: "wk4cmuxveu"
+    ip: "172.18.0.3:30001"
+    nodeID: "i7pvdq8nkh"
   price:
     amount: ""
     currency: ""
     period: ""
-  providerID: "wk4cmuxveu"
+  providerID: "i7pvdq8nkh"
