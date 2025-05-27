@@ -44,6 +44,11 @@ cp <PATH_TO_SBC_REPO>/demo/resources/tigera-operator.yaml quickstart/utils/tiger
 ```bash
 chmod +x node/tools/scripts/setup.sh
 ```
+
+Finally, make sure to have installed the `yq` tool, needed later during the demo
+```bash 
+sudo apt install yq
+```
 ### 1️⃣ Setup the Environment
 
 - Execute the environment setup script:
@@ -77,7 +82,7 @@ kubectl get cm fluidos-node-identity -n fluidos -o yaml
   - `ProviderID` with `nodeID`
   - `domain` and `ip` fields
 
-> NOTE: this is automated in the demo by `./demo/1_provider_setup.sh`.
+> NOTE: this is automated in the demo by `./1_provider_setup.sh`.
 
 ### 3️⃣ Run Initial Setup Scripts
 
@@ -127,19 +132,24 @@ kubectl logs <consumer-controller-pod> -n fluidos
 - From the Consumer side:
 
 ```bash
-./demo/3_reservation_and_allocation.sh <peeringCandidate-name>
+./3_reservation_and_allocation.sh <peeringCandidate-name>
 ```
 
 - The script:
   - Updates `reservation.yaml` with information from ConfigMaps (Consumer details) and PeeringCandidate (Provider details)
   - Applies Reservation and Allocation CRs
 
+- You can inspect the Reservation CR to check the outcome of the reservation process using:
+```bash
+kubectl get reservation -n fluidos
+```
+
 ### 6️⃣ Patch the Contract
 - To pass the Consumer's Request intents to the Provider, the demo uses a Kubernetes ConfigMap that is automatically reflected on both clusters thanks to Liqo. 
 - On the Provider cluster:
 
 ```bash
-./demo/4_patch_contract.sh
+./4_patch_contract.sh
 ```
 
 - This:
@@ -152,7 +162,7 @@ kubectl logs <consumer-controller-pod> -n fluidos
 - On the Consumer cluster:
 
 ```bash
-./demo/5_harmonize.sh
+./5_harmonize.sh
 ```
 
 - Once the namespace is offloaded, the Provider’s controller will:
