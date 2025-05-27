@@ -1,4 +1,4 @@
-# Secure Border Controller for FLUIDOS
+# Secure Border Controller for intent-based border protection
 <p align="center">
   <img src="./docs/images/Fluidos_logo.png" alt="Architecture Diagram"/>
 </p>

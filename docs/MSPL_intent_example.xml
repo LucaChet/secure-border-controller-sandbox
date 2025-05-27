@@ -84,21 +84,58 @@
         </configuration>
     </ITResource>
 
-    <!-- ✅ Authorization Intent: Mandatory Communication -->
+    <!-- Authorization Intents ❌ Forbidden Communications and ✅ Mandatory Communications-->
     <ITResource>
         <configuration xsi:type="AuthorizationIntents">
             <capability>
                 <Name>KubernetesNetworkFiltering</Name>
             </capability>
-            <mandatoryCommunication>
-                <Name>MandatoryCommunication_Example</Name>
+            <forbiddenConnectionList>
+                <configurationRuleAction xsi:type="KubernetesNetworkFilteringAction">
+                    <KubernetesNetworkFilteringActionType>DENY</KubernetesNetworkFilteringActionType>
+                </configurationRuleAction>
+                <configurationCondition xsi:type="KubernetesNetworkFilteringCondition">
+                    <isCNF>false</isCNF>
+                    <source xsi:type="PodNamespaceSelector">
+                        <isHostCluster>true</isHostCluster>
+                        <pod>
+                            <key>*</key>
+                            <value>*</value>
+                        </pod>
+                        <namespace>
+                            <key>*</key>
+                            <value>*</value>
+                        </namespace>
+                    </source>
+                    <sourcePort>*</sourcePort>
+                    <destination xsi:type="PodNamespaceSelector">
+                        <isHostCluster>false</isHostCluster>
+                        <pod>
+                            <key>*</key>
+                            <value>*</value>
+                        </pod>
+                        <namespace>
+                            <key>name</key>
+                            <value>handle-payments</value>
+                        </namespace>
+                    </destination>
+                    <destinationPort>0-79</destinationPort>
+                    <protocolType>TCP</protocolType>
+                </configurationCondition>
+                <externalData xsi:type="Priority">
+                    <value>60000</value>
+                </externalData>
+                <Name>AuthorizationDeny_3</Name>
+                <isCNF>false</isCNF>
+            </forbiddenConnectionList>
+            <mandatoryConnectionList>
                 <configurationRuleAction xsi:type="KubernetesNetworkFilteringAction">
                     <KubernetesNetworkFilteringActionType>ALLOW</KubernetesNetworkFilteringActionType>
                 </configurationRuleAction>
                 <configurationCondition xsi:type="KubernetesNetworkFilteringCondition">
                     <isCNF>false</isCNF>
                     <source xsi:type="PodNamespaceSelector">
-                        <isHostCluster>true</isHostCluster>
+                        <isHostCluster>false</isHostCluster>
                         <pod>
                             <key>app</key>
                             <value>resource-monitor</value>
@@ -108,8 +145,9 @@
                             <value>monitoring</value>
                         </namespace>
                     </source>
+                    <sourcePort>*</sourcePort>
                     <destination xsi:type="PodNamespaceSelector">
-                        <isHostCluster>false</isHostCluster>
+                        <isHostCluster>true</isHostCluster>
                         <pod>
                             <key>*</key>
                             <value>*</value>
@@ -119,47 +157,12 @@
                             <value>*</value>
                         </namespace>
                     </destination>
-                    <sourcePort>*</sourcePort>
                     <destinationPort>43</destinationPort>
                     <protocolType>TCP</protocolType>
                 </configurationCondition>
-            </mandatoryCommunication>
-        </configuration>
-    </ITResource>
-
-    <!-- 🚫 Authorization Intent: Denied Communication -->
-    <ITResource>
-        <configuration xsi:type="AuthorizationIntents">
-            <capability>
-                <Name>KubernetesNetworkFiltering</Name>
-            </capability>
-            <deniedCommunication>
-                <Name>DeniedCommunication_Example</Name>
-                <configurationRuleAction xsi:type="KubernetesNetworkFilteringAction">
-                    <KubernetesNetworkFilteringActionType>DENY</KubernetesNetworkFilteringActionType>
-                </configurationRuleAction>
-                <configurationCondition xsi:type="KubernetesNetworkFilteringCondition">
-                    <isCNF>false</isCNF>
-                    <source xsi:type="PodNamespaceSelector">
-                        <isHostCluster>false</isHostCluster>
-                        <pod>
-                            <key>*</key>
-                            <value>*</value>
-                        </pod>
-                        <namespace>
-                            <key>*</key>
-                            <value>*</value>
-                        </namespace>
-                    </source>
-                    <destination xsi:type="CIDRSelector">
-                        <isHostCluster>false</isHostCluster>
-                        <addressRange>8.8.8.8/32</addressRange>
-                    </destination>
-                    <sourcePort>*</sourcePort>
-                    <destinationPort>53</destinationPort>
-                    <protocolType>UDP</protocolType>
-                </configurationCondition>
-            </deniedCommunication>
+                <Name>AuthorizationMandatory_1</Name>
+                <isCNF>false</isCNF>
+            </mandatoryConnectionList>
         </configuration>
     </ITResource>
 </ITResourceOrchestration>
