@@ -8,16 +8,16 @@ The Secure Border Controller (SBC), developed as part off the FLUIDOS EU project
   
 ## Key Features
 - Support for high-level communication intents
-- Verification of the candidates potentially accommodating the consumer requests before peering and offloading
-- Reconciliation of Private and Request intents expressed by the consumer and Authorization intents expressed by the resources provider 
-- Guarantee of coherence and correctness of network configurations thanks to a smart harmonization process
-- Automatized enforcement of container isolation
+- Verification process filtering the candidates potentially accommodating the consumer requests before peering and offloading
+- Reconciliation of Private and Request intents expressed by the consumer and Authorization intents expressed by the provider 
+- Smart harmonization process to ensure coherence and correctness of network security configuration
+- Automatized refinement and enforcement of container isolation based on users' intents
 
 ## Requirements
 To deploy and use the Secure Border Controller, the following prerequisites must be satisfied:
 
 - **Kubernetes Cluster**:  
-  The SBC component interact with a Kubernetes cluster.
+  The SBC component must interact with an existing Kubernetes cluster.
 
 - **FLUIDOS Node Installation**:  
   The SBC integrates with a working installation of the [FLUIDOS Node](https://fluidos-project.github.io/node/).
@@ -29,15 +29,15 @@ To deploy and use the Secure Border Controller, the following prerequisites must
   The SBC is based on multiple intent sets, i.e., Private and Request intents from the consumer and on Authorization intents from the provider. These intents must adhere to the schema defined in the [intent documentation](./docs/intent-mspl.md).
   
 ## Quick Start
-This section provides a high-level guide to integrate the SBC with an existing FLUIDOS Node deployment.
+This section provides a high-level guide to integrate the SBC with an existing Kubernetes cluster running the FLUIDOS Node components.
 
 ### 1️⃣ Install a FLUIDOS Node
-- Follow the official instructions to deploy a FLUIDOS Node on your cluster
+- Follow the official instructions to deploy a FLUIDOS Node on your cluster.
 
 ### 2️⃣ Deploy the Secure Border Controller
 - Clone this repository:
 ```bash
-  git clone https://github.com/REPO_NAME.git
+  git clone https://github.com/netgroup-polito/secure-border-controller.git
   cd secure-border-controller
 ```
 - Create Service Account for the custom controller:
@@ -47,7 +47,7 @@ kubectl create serviceaccount custom-controller -n fluidos
 - Create all the needed roles/clusterRoles and bindings (TODO: add the necessary RBAC files for easy deployment)
 - Deploy the SBC using its manifest
 ```bash
-kubectl apply -f ./custom-controller.yaml
+kubectl apply -f ./secure-border-controller.yaml
 ```
 4️⃣ Run the Demo Example (Optional)
 - You can test the integration with a demo provided in the `demo/` folder, by following the provided [demo-guide](./docs/demo-guide.md). A public recording showcasing the demo is also available [here](https://www.youtube.com/watch?v=7NBoORvkJ5U&t=34s).
