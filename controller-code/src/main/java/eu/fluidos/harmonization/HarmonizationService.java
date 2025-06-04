@@ -29,24 +29,20 @@ public class HarmonizationService{
 
 	public static Cluster createProviderCluster() {
         List<Pod> podsProvider = new ArrayList<>();
-        // Configure the CONSUMER cluster data
         Namespace nsP1 = new Namespace();
         nsP1.setSingleLabel("name", "default");
         Namespace nsP2 = new Namespace();
         nsP2.setSingleLabel("name", "monitoring");
-
-        Pod pP1 = createPod("database", nsP1);
+		Pod pP1 = createPod("database", nsP1);
         podsProvider.add(pP1);
-
-        Pod pP2 = createPod("product_catalogue", nsP1);
+		Pod pP2 = createPod("product_catalogue", nsP1);
         podsProvider.add(pP2);
-
         Pod pP3 = createPod("resource_monitor", nsP2);
         podsProvider.add(pP3);
-
         return new Cluster(podsProvider, null);
     }
-public static Pod createPod(String value, Namespace namespace) {
+
+	public static Pod createPod(String value, Namespace namespace) {
         Pod pod = new Pod();
         pod.setSingleLabel("app", value);
         pod.setNamespace(namespace);
@@ -54,7 +50,6 @@ public static Pod createPod(String value, Namespace namespace) {
     }
 
 	public RequestIntents harmonize(Cluster cluster, RequestIntents requestIntents, AuthorizationIntents contracAuthorizationIntents) {
-		//System.out.println("Entra nell' harmonize");
 		System.out.println("[HARMONIZATION] Process started...");
         ITResourceOrchestrationType intents_1 = null;
 		AuthorizationIntents authIntentsProvider;
@@ -76,96 +71,28 @@ public static Pod createPod(String value, Namespace namespace) {
 
 		podsByNamespaceAndLabelsProvider = clusterService.initializeHashMaps(cluster);
 
-		/*for (HashMap.Entry<String, HashMap<String, List<Pod>>> namespaceEntry : podsByNamespaceAndLabelsProvider.entrySet()) {
-			System.out.println("Pod Provider");
-            String namespace = namespaceEntry.getKey();
-            HashMap<String, List<Pod>> labelsMap = namespaceEntry.getValue();
-
-            System.out.println("Namespace: " + namespace);
-            for (HashMap.Entry<String, List<Pod>> labelsEntry : labelsMap.entrySet()) {
-                String labels = labelsEntry.getKey();
-                List<Pod> pods = labelsEntry.getValue();
-
-                System.out.println("  Labels: " + labels);
-                for (Pod pod : pods) {
-                    System.out.println("    Pod: " + pod.getLabels());
-                    // Aggiungi qui altre informazioni sul pod se necessario
-                }
-            }
-            System.out.println("");
-            System.out.println("");
-        }*/
-
-		/*
-		for (HashMap.Entry<String, HashMap<String, List<Pod>>> namespaceEntry : podsByNamespaceAndLabelsConsumer.entrySet()) {
-			System.out.println("Pod Consumer");
-            String namespace = namespaceEntry.getKey();
-            HashMap<String, List<Pod>> labelsMap = namespaceEntry.getValue();
-
-            System.out.println("Namespace: " + namespace);
-            for (HashMap.Entry<String, List<Pod>> labelsEntry : labelsMap.entrySet()) {
-                String labels = labelsEntry.getKey();
-                List<Pod> pods = labelsEntry.getValue();
-
-                System.out.println("  Labels: " + labels);
-                for (Pod pod : pods) {
-                    System.out.println("    Pod: " + pod.getLabels());
-                    // Aggiungi qui altre informazioni sul pod se necessario
-                }
-            }
-            System.out.println("");
-            System.out.println("");
-        }*/
-        /*
-         * First, the intents are extracted from the given data structure into three
-         * different lists (for both provider and consumer): - "AuthorizationIntents" -
-         * "PrivateIntents" - "RequestIntents"
-         */
-
+		
         loggerInfo.debug(
                 "[harmonization] - parse the received ITResourceOrchestration types to extract the CONSUMER/PROVIDER intent sets.");
-        //authIntentsProvider = extractAuthorizationIntents(providerIntents);
-		authIntentsProvider = contracAuthorizationIntents;
-
-		//harmonizationData.printDash();
+        authIntentsProvider = contracAuthorizationIntents;
 		System.out.println("[HARMONIZATION] Process the request intents:");
 		harmonizationData.printRequestIntents(requestIntentsConsumer, "consumer");
-		//harmonizationData.printDash();
 		System.out.println("[HARMONIZATION] Process the authorization intents:");
-		//harmonizationData.printAuth();
 		harmonizationData.printAuthorizationIntents(authIntentsProvider);
 
 		if(authIntentsProvider != null) {
 			if (authIntentsProvider.getMandatoryConnectionList().size() > 1 && !requestIntentsConsumer.isAcceptMonitoring()) {
-				//System.out.println("[Harmonization] - Consumer is not accepting monitoring");
 				return null;
-			} else{}
-				//System.out.println("[Harmonization] - Consumer accepted monitoring");
-		}
-		else{
+			}
+		}else{
 			System.out.println("authIntentsProvider is null");
 			return null;
 		}
 
-		/*
-		 * Then, the lists are processed to resolve any possible discordances: 1)
-		 * consumer asks for a connection not permitted by the provider -> these are
-		 * removed from the final set of "Consumer" intents 2) provider asks for a
-		 * mandatory connection not asked by the provider -> these are forced into the
-		 * final set of "Consumer" intents 3) consumer asks for a connection TO a
-		 * service in the provider space and this is not forbidden by host -> these are
-		 * forced into the final set of "Provider" intents
-		 */
 		System.out.println("[HARMONIZATION] Solving discordances...");
 		List<ConfigurationRule> harmonizedRequest_Consumer = harmonizationData.solveTypeOneDiscordances(requestIntentsConsumer, authIntentsProvider,
 				podsByNamespaceAndLabelsConsumer, podsByNamespaceAndLabelsProvider);
 		harmonizedRequest_Consumer = harmonizationData.solverTypeTwoDiscordances(harmonizedRequest_Consumer, requestIntentsConsumer, authIntentsProvider, podsByNamespaceAndLabelsProvider, podsByNamespaceAndLabelsConsumer);
-		//List<ConfigurationRule> harmonizedRequest_Provider = harmonizationData.solverTypeThreeDiscordances(harmonizedRequest_Consumer, requestIntentsProvider, podsByNamespaceAndLabelsConsumer, podsByNamespaceAndLabelsProvider);
-
-        /**
-         * Finally, write the resulting Intents in the original data structures so that
-         * they can be retrieved
-         */
 		RequestIntents requestIntent = new RequestIntents();
 		requestIntent.getConfigurationRule().addAll(harmonizedRequest_Consumer);
         return requestIntent;
@@ -202,25 +129,16 @@ public static Pod createPod(String value, Namespace namespace) {
 		}
 		podsByNamespaceAndLabelsConsumer = clusterService.initializeHashMaps(cluster);
 
-		//harmonizationData.printAuth();
-		//harmonizationData.printRequestIntents(requestIntentsConsumer, "consumer");
 		System.out.println("[+] Checking authorization intents:");
-		//harmonizationData.printDash();
 		harmonizationData.printAuthorizationIntents(authIntentsProvider);
-		//harmonizationData.printDash();
-
 		if (requestIntentsConsumer != null){
 			if (authIntentsProvider.getMandatoryConnectionList().size()>1 && !requestIntentsConsumer.isAcceptMonitoring()) {
-				//System.out.println("Consumer is not accepting monitoring");
 				return false;
 			}
 			else
-				//System.out.println("Consumer is accepting monitoring");
-			verify = harmonizationData.verify(requestIntentsConsumer, authIntentsProvider,
+				verify = harmonizationData.verify(requestIntentsConsumer, authIntentsProvider,
 					podsByNamespaceAndLabelsConsumer, podsByNamespaceAndLabelsProvider);
 
-			//System.out.println("[+] VERIFY result: " + verify);
-			//harmonizationData.printDash();
 			return verify;
 		}else{
 			System.out.println("RequestIntents is null");

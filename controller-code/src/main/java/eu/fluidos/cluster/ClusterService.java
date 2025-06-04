@@ -9,8 +9,6 @@ public class ClusterService {
 	private final ClusterData clusterData = new ClusterData();
 
 	public HashMap<String, HashMap<String, List<Pod>>> initializeHashMaps(Cluster cluster) {
-		//Initialize the HashMaps for the Consumer...
-		// ...and for the Provider
 		return clusterData.initializeHashMaps(cluster);
 	}
 

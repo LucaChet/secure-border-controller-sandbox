@@ -13,7 +13,7 @@ import java.security.NoSuchAlgorithmException;
 import java.util.*;
 
 
-public class Traslator {
+public class Translator {
     private List<RequestIntents> reqIntentsListHarmonized;
     private List<V1NetworkPolicy> networkPolicies;
     private Map<String,String> localNamespaces;
@@ -22,7 +22,7 @@ public class Traslator {
     private int index;
     private boolean isLocal;
 
-    public Traslator(List<RequestIntents> reqIntentsListHarmonized, Map<String,String> localNamespaces,Map<String,String> remoteNamespaces,Map <LabelsKeyValue,String> availablePodsMap,boolean isLocal ) {
+    public Translator(List<RequestIntents> reqIntentsListHarmonized, Map<String,String> localNamespaces,Map<String,String> remoteNamespaces,Map <LabelsKeyValue,String> availablePodsMap,boolean isLocal ) {
         this.index=0;
         this.reqIntentsListHarmonized = reqIntentsListHarmonized;
         this.networkPolicies = new ArrayList<>();
@@ -30,28 +30,12 @@ public class Traslator {
         this.remoteNamespaces=remoteNamespaces;
         this.availablePodsMap = availablePodsMap;
         this.isLocal=isLocal;
-        /*this.authIntents = intents.getITResource().stream()
-            .filter(it -> it.getConfiguration().getClass().equals(AuthorizationIntents.class))
-            .map(it -> (AuthorizationIntents) it.getConfiguration()).findFirst().orElse(null);
-        this.intraVCluster = intents.getITResource().stream()
-            .filter(it -> it.getConfiguration().getClass().equals(PrivateIntents.class))
-            .map(it -> (PrivateIntents) it.getConfiguration()).findFirst().orElse(null);
-        this.interVCluster = intents.getITResource().stream()
-            .filter(it -> it.getConfiguration().getClass().equals(RequestIntents.class))
-            .map(it -> (RequestIntents) it.getConfiguration()).findFirst().orElse(null);
-            */
-            
             if (this.reqIntentsListHarmonized != null){
-                //System.out.println("reIntent is not null");
                 for (RequestIntents reqIntent : reqIntentsListHarmonized){
                     for(ConfigurationRule cr: reqIntent.getConfigurationRule()) {
                         KubernetesNetworkFilteringCondition cond = (KubernetesNetworkFilteringCondition) cr.getConfigurationCondition();
                         Ruleinfo rule = retrieveInfo(cond);
-                        
-                        //Caso in cui non ho ne un indirizzo IP come source, ne come destinazione
                         if (rule.getCidrDestination().getAddressRange() == null && rule.getCidrSource().getAddressRange() == null){
-                            //V1NetworkPolicy createdEgressNetworkPolicy = createEgressAllowNetworkPolicy(cr.getName(),rule);
-                            //V1NetworkPolicy createdIngressNetworkPolicy = createIngressAllowNetworkPolicy(cr.getName(),rule);
                             List<V1NetworkPolicy> createdListIngressNetworkPolicy = createHeaderIngressAllowPolicyForNamespace(cr.getName(),rule);
                             List<V1NetworkPolicy> createdListEgressNetworkPolicy = createEgressAllowPolicyForNamespace(cr.getName(),rule);
                             for (V1NetworkPolicy createdNetworkPolicy : createdListEgressNetworkPolicy){
@@ -62,15 +46,11 @@ public class Traslator {
                                 networkPolicies.add(createdIngressNetworkPolicy);
                             }
                         } else if (rule.getCidrDestination().getAddressRange() == null && rule.getCidrSource().getAddressRange() != null){
-                            // V1NetworkPolicy createdIngressNetworkPolicy = createIngressAllowNetworkPolicy(cr.getName(),rule);
-                            // networkPolicies.add(createdIngressNetworkPolicy);
                             List<V1NetworkPolicy> createdListIngressNetworkPolicy = createHeaderIngressAllowPolicyForNamespace(cr.getName(),rule);
                             for (V1NetworkPolicy createdIngressNetworkPolicy : createdListIngressNetworkPolicy){
                                 networkPolicies.add(createdIngressNetworkPolicy);
                             }     
                         } else if (rule.getCidrDestination().getAddressRange() != null && rule.getCidrSource().getAddressRange() == null){
-                            // V1NetworkPolicy createdEgressNetworkPolicy = createEgressAllowNetworkPolicy(cr.getName(),rule);
-                            // networkPolicies.add(createdEgressNetworkPolicy);
                             List<V1NetworkPolicy> createdListEgressNetworkPolicy = createEgressAllowPolicyForNamespace(cr.getName(),rule);
                             for (V1NetworkPolicy createdNetworkPolicy : createdListEgressNetworkPolicy){
                                 networkPolicies.add(createdNetworkPolicy);
@@ -81,79 +61,6 @@ public class Traslator {
                     }
                 }               
             }
-            /*
-            if (this.interVCluster != null){
-                for(ConfigurationRule cr: this.interVCluster.getConfigurationRule()) {
-                    KubernetesNetworkFilteringCondition cond = (KubernetesNetworkFilteringCondition) cr.getConfigurationCondition();
-                    Ruleinfo rule = retrieveInfo(cond);
-                    
-                    //Caso in cui non ho ne un indirizzo IP come source, ne come destinazione
-                    if (rule.getCidrDestination().getAddressRange() == null && rule.getCidrSource().getAddressRange() == null){
-                        //V1NetworkPolicy createdEgressNetworkPolicy = createEgressAllowNetworkPolicy(cr.getName(),rule);
-                        //V1NetworkPolicy createdIngressNetworkPolicy = createIngressAllowNetworkPolicy(cr.getName(),rule);
-                        List<V1NetworkPolicy> createdListIngressNetworkPolicy = createHeaderIngressAllowPolicyForNamespace(cr.getName(),rule);
-                        List<V1NetworkPolicy> createdListEgressNetworkPolicy = createEgressAllowPolicyForNamespace(cr.getName(),rule);
-                        for (V1NetworkPolicy createdNetworkPolicy : createdListEgressNetworkPolicy){
-                            networkPolicies.add(createdNetworkPolicy);
-                        }
-                        for (V1NetworkPolicy createdIngressNetworkPolicy : createdListIngressNetworkPolicy){
-                            networkPolicies.add(createdIngressNetworkPolicy);
-                        }
-                    } else if (rule.getCidrDestination().getAddressRange() == null && rule.getCidrSource().getAddressRange() != null){
-                        // V1NetworkPolicy createdIngressNetworkPolicy = createIngressAllowNetworkPolicy(cr.getName(),rule);
-                        // networkPolicies.add(createdIngressNetworkPolicy);
-                        List<V1NetworkPolicy> createdListIngressNetworkPolicy = createHeaderIngressAllowPolicyForNamespace(cr.getName(),rule);
-                        for (V1NetworkPolicy createdIngressNetworkPolicy : createdListIngressNetworkPolicy){
-                            networkPolicies.add(createdIngressNetworkPolicy);
-                        }                        
-                    } else if (rule.getCidrDestination().getAddressRange() != null && rule.getCidrSource().getAddressRange() == null){
-                        // V1NetworkPolicy createdEgressNetworkPolicy = createEgressAllowNetworkPolicy(cr.getName(),rule);
-                        // networkPolicies.add(createdEgressNetworkPolicy);
-                        List<V1NetworkPolicy> createdListEgressNetworkPolicy = createEgressAllowPolicyForNamespace(cr.getName(),rule);
-                        for (V1NetworkPolicy createdNetworkPolicy : createdListEgressNetworkPolicy){
-                            networkPolicies.add(createdNetworkPolicy);
-                        }                        
-                    }
-                    
-                    
-                }
-            }
-            
-            if (this.authIntents != null) {
-                for(ConfigurationRule cr: this.authIntents.getMandatoryConnectionList()) {
-                    KubernetesNetworkFilteringCondition cond = (KubernetesNetworkFilteringCondition) cr.getConfigurationCondition();
-                    Ruleinfo rule = retrieveInfo(cond);
-
-                    //Caso in cui non ho ne un indirizzo IP come source, ne come destinazione
-                    if (rule.getCidrDestination().getAddressRange() == null && rule.getCidrSource().getAddressRange() == null){
-                        //V1NetworkPolicy createdEgressNetworkPolicy = createEgressAllowNetworkPolicy(cr.getName(),rule);
-                        List<V1NetworkPolicy> createdListEgressNetworkPolicy = createEgressAllowPolicyForNamespace(cr.getName(),rule);
-                        List<V1NetworkPolicy> createdListIngressNetworkPolicy = createHeaderIngressAllowPolicyForNamespace(cr.getName(),rule);
-                        for (V1NetworkPolicy createdNetworkPolicy : createdListEgressNetworkPolicy){
-                            networkPolicies.add(createdNetworkPolicy);
-                        }
-                        //V1NetworkPolicy createdIngressNetworkPolicy = createIngressAllowNetworkPolicy(cr.getName(),rule);
-                        //networkPolicies.add(createdEgressNetworkPolicy);
-                        //networkPolicies.add(createdIngressNetworkPolicy); 
-                        for (V1NetworkPolicy createdIngressNetworkPolicy : createdListIngressNetworkPolicy){
-                            networkPolicies.add(createdIngressNetworkPolicy);
-                        }                        
-                    } else if (rule.getCidrDestination().getAddressRange() == null && rule.getCidrSource().getAddressRange() != null){
-                        //V1NetworkPolicy createdIngressNetworkPolicy = createIngressAllowNetworkPolicy(cr.getName(),rule);
-                        //networkPolicies.add(createdIngressNetworkPolicy);
-                        List<V1NetworkPolicy> createdListIngressNetworkPolicy = createHeaderIngressAllowPolicyForNamespace(cr.getName(),rule);
-                        for (V1NetworkPolicy createdIngressNetworkPolicy : createdListIngressNetworkPolicy){
-                            networkPolicies.add(createdIngressNetworkPolicy);
-                        }
-                    } else if (rule.getCidrDestination().getAddressRange() != null && rule.getCidrSource().getAddressRange() == null){
-                        List<V1NetworkPolicy> createdListEgressNetworkPolicy = createEgressAllowPolicyForNamespace(cr.getName(),rule);
-                        for (V1NetworkPolicy createdNetworkPolicy : createdListEgressNetworkPolicy){
-                            networkPolicies.add(createdNetworkPolicy);
-                        }
-                    }
-                }
-            }
-            */
             writeNetworkPoliciesToFile1(networkPolicies);
     }
 
@@ -167,18 +74,14 @@ public class Traslator {
         CIDRSelector cidrDestination = new CIDRSelector();
 		if(cond.getSource().getClass().equals(PodNamespaceSelector.class)){
 			PodNamespaceSelector pns = (PodNamespaceSelector) cond.getSource();
-            //sourcePod = pns.getPod().get(0).getValue(); //Gestire meglio nel caso in cui ci sono piu pod e namespace
             sourcePodList = pns.getPod();
             sourceNamespaceList=addRemoteTagNamespace (pns.getNamespace(),cond.getSource().isIsHostCluster());
-            //sourceNamespace = pns.getNamespace().get(0).getValue();
-		} else {
+        } else {
 			cidrSource = (CIDRSelector) cond.getSource();
 		}
 		
 		if(cond.getDestination().getClass().equals(PodNamespaceSelector.class)){
 			PodNamespaceSelector pns = (PodNamespaceSelector) cond.getDestination();
-            //destinationPod = pns.getPod().get(0).getValue();
-            //destinationNamespace = pns.getNamespace().get(0).getValue();
             destinationPodList = pns.getPod();
             destinationNamespaceList = addRemoteTagNamespace (pns.getNamespace(),cond.getDestination().isIsHostCluster());
 		} else {
@@ -226,18 +129,14 @@ public class Traslator {
         List <String> namespacesListToUse = new ArrayList<>();
         if (rule.isSourceHost()){
             namespacesListToUse.addAll(localNamespaces.keySet());
-            //System.out.println("Source da usare locale");
         }else{
             namespacesListToUse.addAll(remoteNamespaces.keySet());
-            //System.out.println("Source da usare remota");
         }
         List<KeyValue> sourcePods = rule.getSourcePod();
         for (KeyValue value : rule.getSourceNamespace()){
-            //System.out.println(value.getValue());
             if(value.getValue().equals("*")){
                 List<String> namespacesListToUseFinal=epurateAvailableNamespaces(namespacesListToUse,rule.getSourcePod());
                 for(String namespaceName : namespacesListToUseFinal){ 
-                    //terminare questa questione che non riesco a gestire
                     netPolicyList.addAll(createEgressAllowNetworkPolicyHeader(namespaceName,name,rule));
                 }
             }else{
@@ -294,10 +193,7 @@ public class Traslator {
     }
     private List<V1NetworkPolicy> createEgressAllowNetworkPolicyHeader (String namespaceName,String name,Ruleinfo rule){
 
-        //Network policy creation and setting of ApiVersion,Kind and metadata
-
         List<V1NetworkPolicy> networkPolicyList = new ArrayList<>();       
-        //Creation of spec
         List <V1NetworkPolicySpec> specList = createEgressSpecList(rule.getLabelsSourcePod(),namespaceName);
         for (V1NetworkPolicySpec spec : specList){
             List <V1NetworkPolicyPeer> destinationPeerList = createEgressDestinationPeer(rule.getLabelsDestinationPod(),rule);
@@ -310,7 +206,6 @@ public class Traslator {
         List<V1NetworkPolicy> networkPolicyList = new ArrayList<>();  
         for (V1NetworkPolicyPeer destinationPeer : destinationPeerList){
             V1NetworkPolicy networkPolicy = new V1NetworkPolicy();
-//                List <V1NetworkPolicyEgressRule> egressRuleList = createEgressRuleList (destinationPeer,rule);
             V1NetworkPolicySpec spec1 = new V1NetworkPolicySpec();
             spec1.setPodSelector(spec.getPodSelector());
             spec1.setPolicyTypes(spec.getPolicyTypes());
@@ -347,7 +242,6 @@ public class Traslator {
             networkPolicy.setApiVersion("networking.k8s.io/v1");
             networkPolicy.setKind("NetworkPolicy");
             V1ObjectMeta metadata = new V1ObjectMeta();
-            //Qui aggiungere l' 
             networkPolicy.setSpec(spec1);  
             String hash_Name = hashName(name.replaceAll("[^a-zA-Z0-9]", "").toLowerCase(),networkPolicy,"Egress",namespaceName);
             metadata.setName(name.replaceAll("[^a-zA-Z0-9]", "").toLowerCase()+namespaceName+hash_Name);
@@ -355,17 +249,12 @@ public class Traslator {
             metadata.namespace(namespaceName);
             networkPolicy.setMetadata(metadata);
             
-            //System.out.print(networkPolicy.getSpec().getEgress().getFirst().getTo().getFirst().getNamespaceSelector().getMatchLabels().get("name"));
             networkPolicyList.add(networkPolicy);
         }
-        // for (V1NetworkPolicy np: networkPolicyList){
-        //     System.out.print(np.getSpec().getEgress().getFirst().getTo().getFirst().getNamespaceSelector().getMatchLabels().get("name"));
-        // }
-        //System.out.println(networkPolicyList.size());
         return networkPolicyList;
     }
-    private List <V1NetworkPolicyEgressRule> createEgressRuleList (V1NetworkPolicyPeer destinationPeer,Ruleinfo rule) {
 
+    private List <V1NetworkPolicyEgressRule> createEgressRuleList (V1NetworkPolicyPeer destinationPeer,Ruleinfo rule) {
         List <V1NetworkPolicyEgressRule> egressRuleList = new ArrayList<>();
         Map<String, String> matchLabelsDestinationNamespace = rule.getLabelsDestinationNamespace();
         if (rule.getCidrDestination().getAddressRange() != null){
@@ -377,10 +266,8 @@ public class Traslator {
             List<String> namespacesListToUse = new ArrayList<>();
             if (rule.isDestinationHost()){
                 namespacesListToUse.addAll(localNamespaces.keySet());
-                //System.out.println("Destination da usare locale");
             }else{
                 namespacesListToUse.addAll(remoteNamespaces.keySet());
-                //System.out.println("Destination da usare remota");
             }
             for (Map.Entry<String, String> entry : matchLabelsDestinationNamespace.entrySet()) {
                 String key = entry.getKey();
@@ -395,11 +282,7 @@ public class Traslator {
                         namespace.setMatchLabels(map);
                         destinationPeer.setNamespaceSelector(namespace);
                         egressRule.setTo(Collections.singletonList(destinationPeer));
-
-                        //System.out.print(destinationPeer.getNamespaceSelector().getMatchLabels().get("name"));
-                        //System.out.print(egressRule.getTo().getFirst().getNamespaceSelector().getMatchLabels().get("name"));
                         egressRuleList.add(egressRule);
-                        //System.out.println(egressRule.getTo().getFirst().getNamespaceSelector().getMatchLabels().get("kubernetes.io/metadata.name"));  
                     }
                 } else {
                     V1NetworkPolicyEgressRule egressRule = new V1NetworkPolicyEgressRule();
@@ -489,6 +372,7 @@ public class Traslator {
             }
         return false;
     }
+
     private List <V1NetworkPolicySpec> createEgressSpecList (Map<String, String> matchLabelsSourcePod,String namespace){
         List <V1NetworkPolicySpec> specList = new ArrayList<>();
         for (Map.Entry<String, String> entry : matchLabelsSourcePod.entrySet()) {
@@ -593,7 +477,7 @@ public class Traslator {
                     listDestinationPeer.addAll(addNamespaceToLabeDestinationPeer (rule,destinationSelector));            
                 }
             }
-    }
+        }
         return listDestinationPeer;
     }
 
@@ -607,7 +491,6 @@ public class Traslator {
             namespacesListToUse.addAll(remoteNamespaces.keySet());
         }
             for (KeyValue value : rule.getDestinationNamespace()){
-                //System.out.println(value.getValue());
                 if(value.getValue().equals("*")){
                     List<String> namespacesListToUseFinal=epurateAvailableNamespaces(namespacesListToUse,rule.getDestinationPod());
                     for(String namespace : namespacesListToUseFinal){ 
@@ -622,11 +505,7 @@ public class Traslator {
     }
 
     private List<V1NetworkPolicy> createIngressAllowNetworkPolicyHeader (String namespaceName,String name,Ruleinfo rule){
-
-        //Network policy creation and setting of ApiVersion,Kind and metadata
-
         List<V1NetworkPolicy> networkPolicyList = new ArrayList<>();       
-        //Creation of spec
         List <V1NetworkPolicySpec> specList = createIngressSpecList(rule.getLabelsDestinationPod(),namespaceName);
         for (V1NetworkPolicySpec spec : specList){
             List <V1NetworkPolicyPeer> sourcePeerList = createIngressSourcePeer(rule.getLabelsSourcePod(),rule);
@@ -739,7 +618,7 @@ public class Traslator {
                     listSourcePeer.addAll(addNamespaceToLabeSourcePeer (rule,sourceSelector));            
                 }
             }
-    }
+        }
         return listSourcePeer;
     }
 
@@ -770,7 +649,7 @@ public class Traslator {
                             listSourcePeer.add(sourcePeer);
                         }
                     }
-                    if(sourceSelector.getMatchLabels() == null){ //Caso in cui ho tutti i pod e tutte le chaivi selezionate
+                    if(sourceSelector.getMatchLabels() == null){
                         V1LabelSelector namespace = new V1LabelSelector();
                         Map<String, String> map = new HashMap<>();
                         map.put("kubernetes.io/metadata.name", namespaceNameAvailable);
@@ -848,40 +727,26 @@ public class Traslator {
             metadata.namespace(namespaceName);
             networkPolicy.setMetadata(metadata);
              
-            //System.out.print(networkPolicy.getSpec().getEgress().getFirst().getTo().getFirst().getNamespaceSelector().getMatchLabels().get("name"));
             networkPolicyList.add(networkPolicy);
         }
-        // for (V1NetworkPolicy np: networkPolicyList){
-        //     System.out.print(np.getSpec().getEgress().getFirst().getTo().getFirst().getNamespaceSelector().getMatchLabels().get("name"));
-        // }
-        //System.out.println(networkPolicyList.size());
         return networkPolicyList;
     }
 
     private V1NetworkPolicy createIngressAllowNetworkPolicy1 (String namespaceName,String name,Ruleinfo rule){
-
-        //Network policy creation and setting of ApiVersion,Kind and metadata
         V1NetworkPolicy networkPolicy = new V1NetworkPolicy();
         networkPolicy.setApiVersion("networking.k8s.io/v1");
         networkPolicy.setKind("NetworkPolicy");
         V1ObjectMeta metadata = new V1ObjectMeta();
         metadata.setName(name.replaceAll("[^a-zA-Z0-9]", "").toLowerCase()+namespaceName);
         metadata.namespace(namespaceName);
-        // if(rule.getDestinationNamespace().get(0).getValue().equals("*") || rule.getDestinationNamespace().isEmpty()){
-        //     metadata.namespace(null);
-        // }else{
-        //     metadata.namespace(rule.getDestinationNamespace().get(0).getValue()); //Questo è da aggiornare in uno step successivo
-        // }
         networkPolicy.setMetadata(metadata);
         
-        //Creation of spec
         V1NetworkPolicySpec spec = new V1NetworkPolicySpec();
-        spec.setPolicyTypes(Collections.singletonList("Ingress")); //Setting of PolicyTyèe
+        spec.setPolicyTypes(Collections.singletonList("Ingress"));
         V1LabelSelector podSelector = new V1LabelSelector();
         Map<String, String> matchLabelsDestinationPod = rule.getLabelsDestinationPod();
-        //Setting of podSelector which is involved in the policy
         if (matchLabelsDestinationPod.containsValue("*")){
-            spec.setPodSelector(null); // gestire il caso in cui devo gestire tutti i POD in quanto kubernetes non va se non specifico PodSelector
+            spec.setPodSelector(null); 
         }else {
             if(matchLabelsDestinationPod.isEmpty()){
                 spec.setPodSelector(podSelector);
@@ -890,7 +755,6 @@ public class Traslator {
                 spec.setPodSelector(podSelector);               
             }
         }
-        //Setting the egress rules and in particoular the destination port (protocol and number of the port)
         V1NetworkPolicyIngressRule ingressRule = new V1NetworkPolicyIngressRule();
         List<V1NetworkPolicyIngressRule> ingressRules = new ArrayList<>();
         V1NetworkPolicyPort port = new V1NetworkPolicyPort();
@@ -918,7 +782,6 @@ public class Traslator {
             ingressRule.setPorts(Collections.singletonList(port)); 
         }
 
-        //Setting of the destination, in particoular I'm setting the name of the destinationPod or the cidrIp address and eventually the destination namespace
         V1LabelSelector destinationSelector = new V1LabelSelector();
         V1NetworkPolicyPeer destinationPeer = new V1NetworkPolicyPeer();
         Map<String, String> matchLabelsSourcePod = rule.getLabelsSourcePod();
@@ -936,7 +799,6 @@ public class Traslator {
             destinationPeer.setIpBlock(ipBlock);
         }
 
-        //Vedere meglio la questione del SourceNamespace
         Map<String, String> matchLabelsSourceNamespace = rule.getLabelsSourceNamespace();
         if(!matchLabelsSourceNamespace.containsValue("*") && !matchLabelsSourceNamespace.isEmpty()){
             V1LabelSelector namespace = new V1LabelSelector();
@@ -957,12 +819,9 @@ public class Traslator {
         
     }
     
-    
-    
     private void writeNetworkPoliciesToFile1(List<V1NetworkPolicy> networkPolicies) {
         try {
             for (V1NetworkPolicy networkPolicy : networkPolicies) {
-                //String fileName = "src/network_policies/" + networkPolicy.getMetadata().getName() + " " + networkPolicy.getSpec().getPolicyTypes().get(0)+".yaml";
                 String fileName = "/app/network_policies/" + networkPolicy.getMetadata().getName() + " " + networkPolicy.getSpec().getPolicyTypes().get(0)+".yaml";
                 FileWriter fileWriter = new FileWriter(fileName);
                 LinkedHashMap<String, Object> yamlData = new LinkedHashMap<>();
@@ -1007,7 +866,7 @@ public class Traslator {
         }
     }
 
- private String hashName(String name , V1NetworkPolicy networkPolicy ,String Policy_type,String namespaceName) {
+    private String hashName(String name , V1NetworkPolicy networkPolicy ,String Policy_type,String namespaceName) {
             StringBuilder string_to_hash = new StringBuilder(name);
             string_to_hash.append(Policy_type);
             string_to_hash.append(namespaceName);
@@ -1075,17 +934,14 @@ public class Traslator {
             
             try {
                 MessageDigest digest = MessageDigest.getInstance("SHA-256");
-                // Convertire la stringa in un array di byte
                 byte[] encodedhash = digest.digest(string_to_hash.toString().getBytes(StandardCharsets.UTF_8));
-                // Convertire l'array di byte in una stringa esadecimale
                 return bytesToHex(encodedhash);
             } catch (NoSuchAlgorithmException e) {
                 throw new RuntimeException(e);
             }
-        }
-
+    }
+   
     private String bytesToHex(byte[] hash) {
-        // Utilizzare un Formatter per convertire i byte in una stringa esadecimale
         Formatter formatter = new Formatter();
         for (byte b : hash) {
             formatter.format("%02x", b);

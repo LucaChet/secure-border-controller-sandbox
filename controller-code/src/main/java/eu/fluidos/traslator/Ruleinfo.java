@@ -8,7 +8,6 @@ import java.util.Map;
 
 public class Ruleinfo {
     private List<KeyValue> sourcePodList;
-    //private String sourceNamespace;
     private CIDRSelector cidrSource;
     private List<KeyValue> destinationPodList;
     private List<KeyValue> destinationNamespaceList;

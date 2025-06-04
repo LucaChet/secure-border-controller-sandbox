@@ -29,15 +29,11 @@ public class TunnelEndpoint {
 
             public static class PeerConfiguration {
                 @SerializedName("allowedIPs")
-                private String allowedIPsString;  // Rappresenta la stringa originale degli indirizzi IP
-
-                // Metodo per ottenere la lista di indirizzi IP
+                private String allowedIPsString; 
                 public List<String> getAllowedIPs() {
-                    // Dividi la stringa degli indirizzi IP usando la virgola e lo spazio come separatore
                     return Arrays.asList(allowedIPsString.split(", "));
                 }
 
-                // Getter e setter per la stringa degli allowedIPs
                 public String getAllowedIPsString() {
                     return allowedIPsString;
                 }
@@ -47,7 +43,6 @@ public class TunnelEndpoint {
                 }
             }
 
-            // Getter e setter per peerConfiguration
             public PeerConfiguration getPeerConfiguration() {
                 return peerConfiguration;
             }
@@ -57,7 +52,6 @@ public class TunnelEndpoint {
             }
         }
 
-        // Getter e setter per connection
         public Connection getConnection() {
             return connection;
         }
@@ -67,7 +61,6 @@ public class TunnelEndpoint {
         }
     }
 
-    // Getter e setter per apiVersion
     public String getApiVersion() {
         return apiVersion;
     }
@@ -76,7 +69,6 @@ public class TunnelEndpoint {
         this.apiVersion = apiVersion;
     }
 
-    // Getter e setter per kind
     public String getKind() {
         return kind;
     }
@@ -85,7 +77,6 @@ public class TunnelEndpoint {
         this.kind = kind;
     }
 
-    // Getter e setter per metadata
     public V1ObjectMeta getMetadata() {
         return metadata;
     }
@@ -94,7 +85,6 @@ public class TunnelEndpoint {
         this.metadata = metadata;
     }
 
-    // Getter e setter per status
     public Status getStatus() {
         return status;
     }
