@@ -62,19 +62,36 @@ public class VerifyTest {
     // Mandatory: monitoring -> *:43 TCP
     KubernetesNetworkFilteringCondition cond1 = new KubernetesNetworkFilteringCondition();
     KubernetesNetworkFilteringAction action1 = new KubernetesNetworkFilteringAction();
-    ResourceSelector rSelector1 = new PodNamespaceSelector();
+    PodNamespaceSelector srcSelector = new PodNamespaceSelector();
+    PodNamespaceSelector dstSelector = new PodNamespaceSelector();
     ConfigurationRule rule1  = new ConfigurationRule();
-   
-    rSelector1.setIsHostCluster(false);
-    rSelector1.
+    List<Pod> clusterPods = new ArrayList<>();
+    List<Namespace> clusterNamespaces = new ArrayList<>();
+    Cluster mockCluster = new Cluster(clusterPods, clusterNamespaces);
+    HarmonizationService harm = new HarmonizationService();
+    srcSelector.setIsHostCluster(false);
+    srcSelector.getNamespace().addAll(new ArrayList<>()); // add actual namespace list -> (key - value) pairs
+    srcSelector.getPod().addAll(new ArrayList<>());       // add actual pod list -> (key - value) pairs
+
+    dstSelector.setIsHostCluster(false);
+    dstSelector.getNamespace().addAll(new ArrayList<>());   // add actual namespace list -> (key - value) pairs
+    dstSelector.getPod().addAll(new ArrayList<>());         // add actual pod list -> (key - value) pairs
+
     action1.setKubernetesNetworkFilteringActionType("ALLOW");
     cond1.setIsCNF(false);
     cond1.setProtocolType(ProtocolType.TCP);
-    cond1.setSource(null);
+    cond1.setSource(srcSelector);
+    cond1.setDestination(dstSelector);
+    cond1.setDestinationPort("88");
+    cond1.setSourcePort("120");
     rule1.setConfigurationCondition(cond1);
     rule1.setConfigurationRuleAction(action1);
     
+    authIntents.getForbiddenConnectionList();
+    authIntents.getMandatoryConnectionList().add(rule1);
 
+    boolean res = harm.verify(mockCluster, authIntents);
+    assertFalse(res);
     }
 
 
