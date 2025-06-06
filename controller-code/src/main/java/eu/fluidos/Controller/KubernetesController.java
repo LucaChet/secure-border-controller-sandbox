@@ -26,6 +26,7 @@ import io.kubernetes.client.util.Config;
 import io.kubernetes.client.util.Watch;
 import io.kubernetes.client.util.Yaml;
 import io.kubernetes.client.util.credentials.AccessTokenAuthentication;
+import io.kubernetes.client.util.wait.Wait;
 import okhttp3.Request;
 
 import java.io.File;
@@ -48,7 +49,6 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import io.kubernetes.client.util.Yaml;
 import eu.fluidos.Module;
 import eu.fluidos.jaxb.AuthorizationIntents;
 import eu.fluidos.jaxb.CIDRSelector;
@@ -103,8 +103,8 @@ public class KubernetesController {
     private final ITResourceOrchestrationType intents;
     private static final Logger LOGGER = Logger.getLogger(KubernetesController.class.getName());
     private List<String> offloadedNamespace;
-    private Map<String,List<String>> allowedIpList; 
-    private List<RequestIntents> reqIntentsList = new ArrayList<>(); 
+    private Map<String, List<String>> allowedIpList;
+    private List<RequestIntents> reqIntentsList = new ArrayList<>();
     private ApiClient client;
     private static final ObjectMapper objectMapper = new ObjectMapper();
     private HarmonizationController harmController;
@@ -114,62 +114,76 @@ public class KubernetesController {
     private static ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
 
     List<String> namespacesToExclude = new ArrayList<>(Arrays.asList(
-        "calico-apiserver",
-        "calico-system",
-        "kube-node-lease",
-        "kube-public",
-        "kube-system",
-        "local-path-storage",
-        "tigera-operator",
-        "cert-manager",
-        "fluidos",
-        "calico-apiserver"
-    ));
+            "calico-apiserver",
+            "calico-system",
+            "kube-node-lease",
+            "kube-public",
+            "kube-system",
+            "local-path-storage",
+            "tigera-operator",
+            "cert-manager",
+            "fluidos",
+            "calico-apiserver",
+            "liqo"));
+
     public KubernetesController(ITResourceOrchestrationType intents) {
-        this.intents=intents;
+        this.intents = intents;
         try {
-            String token = new String(Files.readAllBytes(Paths.get("/var/run/secrets/kubernetes.io/serviceaccount/token"))); //Path per accedere al token assocaito al pod a cui ho associato il service account
-            this.client = Config.fromToken("https://kubernetes.default.svc", token, false); //URL all' interno del namespace default per accedere all API server ed autenticarsi
+            String token = new String(
+                    Files.readAllBytes(Paths.get("/var/run/secrets/kubernetes.io/serviceaccount/token"))); // Path per
+                                                                                                           // accedere
+                                                                                                           // al token
+                                                                                                           // assocaito
+                                                                                                           // al pod a
+                                                                                                           // cui ho
+                                                                                                           // associato
+                                                                                                           // il service
+                                                                                                           // account
+            this.client = Config.fromToken("https://kubernetes.default.svc", token, false); // URL all' interno del
+                                                                                            // namespace default per
+                                                                                            // accedere all API server
+                                                                                            // ed autenticarsi
             Configuration.setDefaultApiClient(this.client);
         } catch (IOException e) {
             LOGGER.log(Level.SEVERE, "Errore durante l'inizializzazione del client Kubernetes", e);
             throw new RuntimeException("Errore durante l'inizializzazione del client Kubernetes", e);
         }
-       this.offloadedNamespace=new ArrayList<>();
+        this.offloadedNamespace = new ArrayList<>();
         this.allowedIpList = new HashMap<>();
     }
 
     public void start() throws Exception {
-        
+
         try {
             LOGGER.info("Connesso al cluster: " + this.client.getBasePath());
         } catch (Exception e) {
             LOGGER.log(Level.SEVERE, "Errore durante la connessione al cluster Kubernetes", e);
             throw e;
         }
-        
+
         CoreV1Api api = new CoreV1Api(client);
         Thread namespaceThread = new Thread(() -> {
             try {
-                watchNamespaces(client,api);
+                watchNamespaces(client, api);
             } catch (Exception e) {
                 e.printStackTrace();
                 System.err.println("Error invoking Kubernetes' API: " + e.getMessage());
             }
         });
 
+        /* Unused thread: applyDefaultNetworkPolicies has been integrated into watchNameSpaces
         Thread defaultDenyNetworkPolicyThread = new Thread(() -> {
             try {
-                applyDefaultDenyNetworkPoliciies(client,api);
+                applyDefaultDenyNetworkPolicies(client, api);
             } catch (Exception e) {
                 e.printStackTrace();
                 System.err.println("Error invoking Kubernetes' API: " + e.getMessage());
             }
-        });
+        });*/
 
         Thread podThread = new Thread(() -> {
             try {
-                watchPods(client,api);
+                watchPods(client, api);
             } catch (Exception e) {
                 e.printStackTrace();
                 System.err.println("Error invoking Kubernetes' API: " + e.getMessage());
@@ -184,7 +198,6 @@ public class KubernetesController {
             }
         });
 
-        
         Thread peeringCandidatesThread = new Thread(() -> {
             try {
                 watchPeeringCandidates(client);
@@ -194,55 +207,106 @@ public class KubernetesController {
         });
 
         peeringCandidatesThread.start();
-        defaultDenyNetworkPolicyThread.start();
+        //defaultDenyNetworkPolicyThread.start();
         namespaceThread.start();
         podThread.start();
         tunnelEndpointThread.start();
     }
 
-    public void watchPods(ApiClient client,CoreV1Api api) throws Exception {
+    public void watchPods(ApiClient client, CoreV1Api api) throws Exception {
         Watch<V1Pod> podWatch = Watch.createWatch(
-            client,
-            api.listPodForAllNamespacesCall(null, null, null, null, null, null, null, null, null, Boolean.TRUE, null),
-            new TypeToken<Watch.Response<V1Pod>>() {}.getType()
-        );
+                client,
+                api.listPodForAllNamespacesCall(null, null, null, null, null, null, null, null, null, Boolean.TRUE,
+                        null),
+                new TypeToken<Watch.Response<V1Pod>>() {
+                }.getType());
 
         for (Watch.Response<V1Pod> item : podWatch) {
             V1Pod pod = item.object;
             if (item.type.equals("ADDED") && this.offloadedNamespace.contains(pod.getMetadata().getNamespace())) {
-                System.out.println("New Pod created: " + pod.getMetadata().getName() + ", in Namespace: " + pod.getMetadata().getNamespace());
+                System.out.println("New Pod created: " + pod.getMetadata().getName() + ", in Namespace: "
+                        + pod.getMetadata().getNamespace());
                 CreateNetworkPolicies(client, pod.getMetadata().getNamespace());
             } else if (item.type.equals("DELETED")) {
-                System.out.println("Pod deleted: " + pod.getMetadata().getName() + ", from Namespace: " + pod.getMetadata().getNamespace());
+                System.out.println("Pod deleted: " + pod.getMetadata().getName() + ", from Namespace: "
+                        + pod.getMetadata().getNamespace());
             }
         }
     }
 
-    public void applyDefaultDenyNetworkPoliciies(ApiClient client,CoreV1Api api) throws Exception {
-        try{
+    /* Useless since its logic has been integrated in the namespace watcher, which now adds also the netpols according to the matched conditions
+    public void applyDefaultDenyNetworkPolicies(ApiClient client, CoreV1Api api) throws Exception {
+        try {
             Watch<V1Namespace> namespaceWatch = Watch.createWatch(
-                client,
-                api.listNamespaceCall(null, null, null, null, null, null, null, null, null, Boolean.TRUE, null),
-                new TypeToken<Watch.Response<V1Namespace>>() {}.getType()
-            );
+                    client,
+                    api.listNamespaceCall(null, null, null, null, null, null, null, null, null, Boolean.TRUE, null),
+                    new TypeToken<Watch.Response<V1Namespace>>() {
+                    }.getType());
             for (Watch.Response<V1Namespace> item : namespaceWatch) {
                 V1Namespace namespace = item.object;
 
-                if (item.type.equals("ADDED") && !namespacesToExclude.contains(namespace.getMetadata().getName()) && !namespace.getMetadata().getName().contains("liqo")) {
+                if (item.type.equals("ADDED") && !namespacesToExclude.contains(namespace.getMetadata().getName())) {
                     CreateDefaultDenyNetworkPolicies(client, namespace.getMetadata().getName());
-                    createAllowKubeDNSNetworkPolicy(client,namespace.getMetadata().getName());
-                    if (isNamespaceOffloaded(namespace)){
-                        createNetworkPolicyForIPRange(client,namespace,namespace.getMetadata().getLabels().get("liqo.io/remote-cluster-id"));
+                    createAllowKubeDNSNetworkPolicy(client, namespace.getMetadata().getName());
+                    if (isNamespaceOffloaded(namespace)) {
+                        createNetworkPolicyForIPRange(client, namespace, namespace.getMetadata().getLabels().get("liqo.io/remote-cluster-id"));
                     }
                 } else if (item.type.equals("DELETED") && isNamespaceOffloaded(namespace)) {
                     System.out.println("Offloaded Namespace deleted: " + namespace.getMetadata().getName());
-                } else if (item.type.equals("MODIFIED") && isNamespaceToOffload(namespace)){
-                    String key=allowedIpList.keySet().iterator().next();
-                    createNetworkPolicyForIPRange(client,namespace,key);
-                    System.out.println("Namespace: "+ namespace.getMetadata().getName()+" modified");
+                } else if (item.type.equals("MODIFIED") && isNamespaceToOffload(namespace)) {
+                    String key = allowedIpList.keySet().iterator().next();
+                    createNetworkPolicyForIPRange(client, namespace, key);
+                    System.out.println("Namespace: " + namespace.getMetadata().getName() + " modified");
                 }
             }
-        }catch(ApiException e){
+        } catch (ApiException e) {
+            System.err.println("Error invoking Kubernetes API: " + e.getMessage());
+            System.err.println("Error code: " + e.getCode());
+            System.err.println("Error message: " + e.getResponseBody());
+            e.printStackTrace();
+        }
+    }
+    */
+
+    public void watchNamespaces(ApiClient client, CoreV1Api api) throws Exception {
+        try {
+            Watch<V1Namespace> namespaceWatch = Watch.createWatch(
+                    client,
+                    api.listNamespaceCall(null, null, null, null, null, null, null, null, null, Boolean.TRUE, null),
+                    new TypeToken<Watch.Response<V1Namespace>>() {
+                    }.getType());
+            for (Watch.Response<V1Namespace> item : namespaceWatch) {
+                V1Namespace namespace = item.object;
+                if (item.type.equals("ADDED")){
+                    if(isNamespaceOffloaded(namespace)) {
+                        offloadedNamespace.add(namespace.getMetadata().getName());
+                        createNetworkPolicyForIPRange(client, namespace, namespace.getMetadata().getLabels().get("liqo.io/remote-cluster-id"));
+                        System.out.println("New Offloaded Namespace: " + namespace.getMetadata().getName());
+                        if (firstCallToModuletimer) {
+                            startModuleTimer(client);
+                            firstCallToModuletimer = false;
+                        }
+                    } 
+                    if (!namespacesToExclude.contains(namespace.getMetadata().getName())){
+                        CreateDefaultDenyNetworkPolicies(client, namespace.getMetadata().getName());
+                        createAllowKubeDNSNetworkPolicy(client, namespace.getMetadata().getName());
+                    }
+                } else if (item.type.equals("DELETED") && isNamespaceOffloaded(namespace)) {
+                    offloadedNamespace.remove(namespace.getMetadata().getName());
+                    System.out.println("Offloaded Namespace deleted: " + namespace.getMetadata().getName());
+                } else if (item.type.equals("MODIFIED")) {
+                    if (isNamespaceOffloaded(namespace)) {
+                        if (firstCallToModuletimer) {
+                            startModuleTimer(client);
+                            firstCallToModuletimer = false;
+                        }
+                    } else if (isNamespaceToOffload(namespace)) {
+                        String key = allowedIpList.keySet().iterator().next();
+                        createNetworkPolicyForIPRange(client, namespace, key);
+                    }
+                }
+            }
+        } catch (ApiException e) {
             System.err.println("Error invoking Kubernetes API: " + e.getMessage());
             System.err.println("Error code: " + e.getCode());
             System.err.println("Error message: " + e.getResponseBody());
@@ -250,114 +314,127 @@ public class KubernetesController {
         }
     }
 
-    public void watchNamespaces(ApiClient client,CoreV1Api api) throws Exception {
-        try{
+    /* Backup function of watchNamespaces, before integrating the applyDefaultNetworkPolicies() logic in it, as above
+    
+    public void watchNamespaces(ApiClient client, CoreV1Api api) throws Exception {
+        try {
             Watch<V1Namespace> namespaceWatch = Watch.createWatch(
-                client,
-                api.listNamespaceCall(null, null, null, null, null, null, null, null, null, Boolean.TRUE, null),
-                new TypeToken<Watch.Response<V1Namespace>>() {}.getType()
-            );
+                    client,
+                    api.listNamespaceCall(null, null, null, null, null, null, null, null, null, Boolean.TRUE, null),
+                    new TypeToken<Watch.Response<V1Namespace>>() {
+                    }.getType());
             for (Watch.Response<V1Namespace> item : namespaceWatch) {
                 V1Namespace namespace = item.object;
                 if (item.type.equals("ADDED") && isNamespaceOffloaded(namespace)) {
                     offloadedNamespace.add(namespace.getMetadata().getName());
                     System.out.println("New Offloaded Namespace: " + namespace.getMetadata().getName());
-                    if (firstCallToModuletimer){
+                    if (firstCallToModuletimer) {
                         startModuleTimer(client);
                         firstCallToModuletimer = false;
                     }
-                        
+
                 } else if (item.type.equals("DELETED") && isNamespaceOffloaded(namespace)) {
+                    offloadedNamespace.remove(namespace.getMetadata().getName());
                     System.out.println("Offloaded Namespace deleted: " + namespace.getMetadata().getName());
-                } else if (item.type.equals("MODIFIED") && !namespacesToExclude.contains(namespace.getMetadata().getName()) && !namespace.getMetadata().getName().contains("liqo")){
-                    if (firstCallToModuletimer){
-                            startModuleTimer(client);
+                } else if (item.type.equals("MODIFIED") && isNamespaceOffloaded(namespace)) {
+                    if (firstCallToModuletimer) {
+                        startModuleTimer(client);
                         firstCallToModuletimer = false;
                     }
-                    }
                 }
-        }catch(ApiException e){
+            }
+        } catch (ApiException e) {
             System.err.println("Error invoking Kubernetes API: " + e.getMessage());
             System.err.println("Error code: " + e.getCode());
             System.err.println("Error message: " + e.getResponseBody());
             e.printStackTrace();
         }
     }
- 
+     */
+
     private void startModuleTimer(ApiClient client) {
         ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
         scheduler.schedule(() -> {
-            HarmonizationController harmController_new = new HarmonizationController();
+            HarmonizationController harmonizationController = new HarmonizationController();
             try {
-                AuthorizationIntents contrAuthorizationIntent = listContract(client);
-                if (contrAuthorizationIntent != null) {
-                    if (reqIntentsList.size() >0 ){
-                        List<RequestIntents> requestIntentsHarmonizedList = new ArrayList<>();
-                        for (RequestIntents reqIntent : reqIntentsList) {
-                                requestIntentsHarmonizedList.add(harmController_new.harmonize(createCluster(client, "provider"), reqIntent,contrAuthorizationIntent));
-                        }
+                AuthorizationIntents contractAuthIntents = listContract(client);
+
+                // should we support for a contract with empty authorization intents?
+                if (contractAuthIntents != null) {
+                    if (reqIntentsList.size() > 0) {
+                        List<RequestIntents> harmonizedIntents = new ArrayList<>();
                         System.out.println("Start the harmonization");
-                        Module module = new Module(requestIntentsHarmonizedList, client);
+                        for (RequestIntents reqIntent : reqIntentsList) {
+                            Cluster cluster = createCluster(client, "provider");
+                            harmonizedIntents
+                                    .add(harmonizationController.harmonize(cluster, reqIntent, contractAuthIntents));
+                        }
+
+                        Module module = new Module(harmonizedIntents, client);
                         CoreV1Api api = new CoreV1Api(client);
-                        V1NamespaceList namespaceList = api.listNamespace(null, null, null, null, null, null, null, null, null, null);
+
+                        // apply network policies to all namespaces
+                        V1NamespaceList namespaceList = api.listNamespace(null, null, null, null, null, null, null,
+                                null, null, null);
                         for (V1Namespace namespace : namespaceList.getItems()) {
                             CreateNetworkPolicies(client, namespace.getMetadata().getName());
                         }
                     } else {
                         System.out.println("reqIntent is empty");
+                        return;
                     }
                 }
             } catch (Exception e) {
                 System.out.println("Error invoking the harmonization");
                 e.printStackTrace();
             }
-            firstCallToModuletimer=true;
+            firstCallToModuletimer = true;
         }, 5, TimeUnit.SECONDS);
         firstCallToModuletimer = true;
     }
 
     public void watchTunnelEndpoint(ApiClient client) throws Exception {
         try {
-        CustomObjectsApi customObjectsApi = new CustomObjectsApi(client);
-        Watch<TunnelEndpoint> watch = Watch.createWatch(
-                client,
-                customObjectsApi.listClusterCustomObjectCall(
-                    "net.liqo.io",
-                    "v1alpha1",
-                    "tunnelendpoints",
-                    null,           
-                    null, 
-                    null,
-                    null,
-                    null,
-                    null,
-                    null,
-                    null,
-                    null,
-                    true,
-                    null
-            ),
-                new TypeToken<Watch.Response<TunnelEndpoint>>() {}.getType()
-        );
+            CustomObjectsApi customObjectsApi = new CustomObjectsApi(client);
+            Watch<TunnelEndpoint> watch = Watch.createWatch(
+                    client,
+                    customObjectsApi.listClusterCustomObjectCall(
+                            "net.liqo.io",
+                            "v1alpha1",
+                            "tunnelendpoints",
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            true,
+                            null),
+                    new TypeToken<Watch.Response<TunnelEndpoint>>() {
+                    }.getType());
 
-        for (Watch.Response<TunnelEndpoint> item : watch) {
-            if(item.type.equals("ADDED")){
-                TunnelEndpoint tunnelEndpoint = item.object;
-                if (tunnelEndpoint != null) {
-                    TunnelEndpoint.Status status = tunnelEndpoint.getStatus();
-                    if (status != null) {
-                        TunnelEndpoint.Status.Connection connection = status.getConnection();
-                        if (connection != null) {
-                            this.allowedIpList.put(tunnelEndpoint.getMetadata().getLabels().get("clusterID"), new ArrayList<>(connection.getPeerConfiguration().getAllowedIPs()));
-                            for (Map.Entry<String, List<String>> entry : this.allowedIpList.entrySet()) {
-                                //System.out.println(entry);
+            for (Watch.Response<TunnelEndpoint> item : watch) {
+                if (item.type.equals("ADDED")) {
+                    TunnelEndpoint tunnelEndpoint = item.object;
+                    if (tunnelEndpoint != null) {
+                        TunnelEndpoint.Status status = tunnelEndpoint.getStatus();
+                        if (status != null) {
+                            TunnelEndpoint.Status.Connection connection = status.getConnection();
+                            if (connection != null) {
+                                this.allowedIpList.put(tunnelEndpoint.getMetadata().getLabels().get("clusterID"),
+                                        new ArrayList<>(connection.getPeerConfiguration().getAllowedIPs()));
+                                for (Map.Entry<String, List<String>> entry : this.allowedIpList.entrySet()) {
+                                    // System.out.println(entry);
+                                }
                             }
                         }
                     }
                 }
             }
-        }
-        }catch(ApiException e){
+        } catch (ApiException e) {
             System.err.println("Error invoking Kubernetes API: " + e.getMessage());
             System.err.println("Error code: " + e.getCode());
             System.err.println("Error message: " + e.getResponseBody());
@@ -370,42 +447,43 @@ public class KubernetesController {
         try {
             CustomObjectsApi customObjectsApi = new CustomObjectsApi(client);
             Object response = customObjectsApi.listNamespacedCustomObject(
-                "reservation.fluidos.eu",
-                "v1alpha1", 
-                "fluidos",
-                "contracts",
-                null,
-                null, 
-                null,                    
-                null,                 
-                null,                     
-                null,                   
-                null,
-                null,
-                null,
-                null                
-            );
+                    "reservation.fluidos.eu",
+                    "v1alpha1",
+                    "fluidos",
+                    "contracts",
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null);
             Map<String, Object> responseMap = (Map<String, Object>) response;
             List<Map<String, Object>> items = (List<Map<String, Object>>) responseMap.get("items");
-            
+
             for (Map<String, Object> item : items) {
                 Map<String, Object> spec = (Map<String, Object>) item.get("spec");
                 Map<String, Object> flavor = (Map<String, Object>) spec.get("flavor");
                 Map<String, Object> flavorSpec = (flavor != null) ? (Map<String, Object>) flavor.get("spec") : null;
-                String networkPropertyType = (flavorSpec != null && flavorSpec.containsKey("networkPropertyType")) ?
-                        (String) flavorSpec.get("networkPropertyType") : null;
+                String networkPropertyType = (flavorSpec != null && flavorSpec.containsKey("networkPropertyType"))
+                        ? (String) flavorSpec.get("networkPropertyType")
+                        : null;
 
-                String networkRequests = spec.containsKey("networkRequests") ? (String) spec.get("networkRequests") : null;
+                String networkRequests = spec.containsKey("networkRequests") ? (String) spec.get("networkRequests")
+                        : null;
                 String buyerClusterID = spec.containsKey("buyerClusterID") ? (String) spec.get("buyerClusterID") : null;
 
-                if (networkRequests != null){
-                    for (String namespace : offloadedNamespace){
+                if (networkRequests != null) {
+                    for (String namespace : offloadedNamespace) {
                         try {
-                            RequestIntents reqIntentToAdd = accessConfigMap(client,namespace,networkRequests);
-                            if (reqIntentToAdd != null){
+                            RequestIntents reqIntentToAdd = accessConfigMap(client, namespace, networkRequests);
+                            if (reqIntentToAdd != null) {
                                 reqIntentsList.add(reqIntentToAdd);
-                            }    
-                        } catch (Exception e){
+                            }
+                        } catch (Exception e) {
 
                         }
 
@@ -415,7 +493,7 @@ public class KubernetesController {
                 String jsonString = gson.toJson(flavorSpec);
                 JsonObject flavorSpecJson = gson.fromJson(jsonString, JsonObject.class);
                 JsonObject flavorType = (flavorSpec != null) ? flavorSpecJson.getAsJsonObject("flavorType") : null;
-                JsonObject typeData = (flavorType != null) ? flavorType.getAsJsonObject("typeData"):null;
+                JsonObject typeData = (flavorType != null) ? flavorType.getAsJsonObject("typeData") : null;
                 contrAuthorizationIntents = accessFlavour(typeData);
             }
             return contrAuthorizationIntents;
@@ -428,7 +506,7 @@ public class KubernetesController {
         return contrAuthorizationIntents;
     }
 
-    public AuthorizationIntents insertAuthorizationIntents (JsonObject typeData){
+    public AuthorizationIntents insertAuthorizationIntents(JsonObject typeData) {
         AuthorizationIntents authIntent = new AuthorizationIntents();
         List<ConfigurationRule> forbiddenConnectionList = authIntent.getForbiddenConnectionList();
         List<ConfigurationRule> mandatoryConnectionList = authIntent.getMandatoryConnectionList();
@@ -437,7 +515,7 @@ public class KubernetesController {
         Priority prio = new Priority();
         boolean isCNF = false;
         if (characteristics != null) {
-            if(characteristics.has("action")){
+            if (characteristics.has("action")) {
                 action.setKubernetesNetworkFilteringActionType(characteristics.get("action").getAsString());
             }
 
@@ -451,16 +529,16 @@ public class KubernetesController {
             }
             if (characteristics.has("deniedCommunications") && characteristics.has("mandatoryCommunications")) {
                 JsonArray deniedCommunications = characteristics.getAsJsonArray("deniedCommunications");
-                populateAuthorizationIntents(deniedCommunications, forbiddenConnectionList,action,prio,isCNF);
+                populateAuthorizationIntents(deniedCommunications, forbiddenConnectionList, action, prio, isCNF);
                 JsonArray mandatoryCommunications = characteristics.getAsJsonArray("mandatoryCommunications");
-                populateAuthorizationIntents(mandatoryCommunications, mandatoryConnectionList,action,prio,isCNF);
+                populateAuthorizationIntents(mandatoryCommunications, mandatoryConnectionList, action, prio, isCNF);
             } else if (characteristics.has("mandatoryCommunications")) {
                 JsonArray mandatoryCommunications = characteristics.getAsJsonArray("mandatoryCommunications");
-                populateAuthorizationIntents(mandatoryCommunications, mandatoryConnectionList,action,prio,isCNF);
+                populateAuthorizationIntents(mandatoryCommunications, mandatoryConnectionList, action, prio, isCNF);
             } else if (characteristics.has("deniedCommunications")) {
                 JsonArray deniedCommunications = characteristics.getAsJsonArray("deniedCommunications");
-                populateAuthorizationIntents(deniedCommunications, forbiddenConnectionList,action,prio,isCNF);
-            }else {
+                populateAuthorizationIntents(deniedCommunications, forbiddenConnectionList, action, prio, isCNF);
+            } else {
                 System.out.println("Mandatory Communications and Denied communications not found.");
             }
         } else {
@@ -468,46 +546,48 @@ public class KubernetesController {
         }
         return authIntent;
     }
-    
-    public Cluster createCluster (ApiClient client,String whoIs){
-        CoreV1Api api = new CoreV1Api(client);
-        Cluster myCluster = new Cluster(null,null);
-        try {
-        V1NamespaceList namespaceList = api.listNamespace(null,null,null,null,null,null,null,null,null,null);
-        V1NamespaceList epuratedNamespaceList = new V1NamespaceList();
-        Epurate1(namespaceList);
-        if (whoIs.equals("provider")){
-            epuratedNamespaceList=providerNamespaceList;
-        }else if (whoIs.equals("consumer")){
-            epuratedNamespaceList=consumerNamespaceList;
-        }
-        
-        List <Namespace> NamespaceList = new ArrayList<>();
-        List <Pod> PodList = new ArrayList<>();
-        for (V1Namespace namespace : epuratedNamespaceList.getItems()){
-            Namespace nm = new Namespace();
-            HashMap<String, String> hashMapLabels = new HashMap<>(namespace.getMetadata().getLabels());
-            HashMap<String, String> hashMapSingleLabels = new HashMap<>();
-            Map.Entry<String, String> firstLabel = hashMapLabels.entrySet().iterator().next();
-            hashMapSingleLabels.put(firstLabel.getKey(), firstLabel.getValue());
-            nm.setLabels(hashMapSingleLabels);
-            NamespaceList.add(nm);
-            V1PodList podList = api.listNamespacedPod(namespace.getMetadata().getName(), null, null, null, null, null, null, null, null, null, null);
-            for (V1Pod pod : podList.getItems()) {
-                Pod pd = new Pod();
-                HashMap<String, String> podHashMapLabels = new HashMap<>(pod.getMetadata().getLabels());
-                HashMap<String, String> hashMapSinglePodsLabels = new HashMap<>();
-                Map.Entry<String, String> firstLabelPod = podHashMapLabels.entrySet().iterator().next();
-                hashMapSinglePodsLabels.put(firstLabelPod.getKey(), firstLabelPod.getValue());
-                pd.setLabels(hashMapSinglePodsLabels);
-                pd.setNamespace(nm);
-                PodList.add(pd);
-            }
-        }
 
-        myCluster.setNamespaces(NamespaceList);
-        myCluster.setPods(PodList);
-        
+    public Cluster createCluster(ApiClient client, String whoIs) {
+        CoreV1Api api = new CoreV1Api(client);
+        Cluster myCluster = new Cluster(null, null);
+        try {
+            V1NamespaceList namespaceList = api.listNamespace(null, null, null, null, null, null, null, null, null,
+                    null);
+            V1NamespaceList epuratedNamespaceList = new V1NamespaceList();
+            Epurate1(namespaceList);
+            if (whoIs.equals("provider")) {
+                epuratedNamespaceList = providerNamespaceList;
+            } else if (whoIs.equals("consumer")) {
+                epuratedNamespaceList = consumerNamespaceList;
+            }
+
+            List<Namespace> NamespaceList = new ArrayList<>();
+            List<Pod> PodList = new ArrayList<>();
+            for (V1Namespace namespace : epuratedNamespaceList.getItems()) {
+                Namespace nm = new Namespace();
+                HashMap<String, String> hashMapLabels = new HashMap<>(namespace.getMetadata().getLabels());
+                HashMap<String, String> hashMapSingleLabels = new HashMap<>();
+                Map.Entry<String, String> firstLabel = hashMapLabels.entrySet().iterator().next();
+                hashMapSingleLabels.put(firstLabel.getKey(), firstLabel.getValue());
+                nm.setLabels(hashMapSingleLabels);
+                NamespaceList.add(nm);
+                V1PodList podList = api.listNamespacedPod(namespace.getMetadata().getName(), null, null, null, null,
+                        null, null, null, null, null, null);
+                for (V1Pod pod : podList.getItems()) {
+                    Pod pd = new Pod();
+                    HashMap<String, String> podHashMapLabels = new HashMap<>(pod.getMetadata().getLabels());
+                    HashMap<String, String> hashMapSinglePodsLabels = new HashMap<>();
+                    Map.Entry<String, String> firstLabelPod = podHashMapLabels.entrySet().iterator().next();
+                    hashMapSinglePodsLabels.put(firstLabelPod.getKey(), firstLabelPod.getValue());
+                    pd.setLabels(hashMapSinglePodsLabels);
+                    pd.setNamespace(nm);
+                    PodList.add(pd);
+                }
+            }
+
+            myCluster.setNamespaces(NamespaceList);
+            myCluster.setPods(PodList);
+
         } catch (ApiException e) {
             System.err.println("Error: ");
             e.printStackTrace();
@@ -516,15 +596,17 @@ public class KubernetesController {
         return myCluster;
     }
 
-    private void Epurate1(V1NamespaceList namespaceList){
-        providerNamespaceList=new V1NamespaceList();
+    private void Epurate1(V1NamespaceList namespaceList) {
+        providerNamespaceList = new V1NamespaceList();
         consumerNamespaceList = new V1NamespaceList();
 
         for (V1Namespace namespace : namespaceList.getItems()) {
-            if (!namespacesToExclude.contains(namespace.getMetadata().getName()) && !namespace.getMetadata().getName().contains("liqo") && !namespace.getMetadata().getName().contains("remote-cluster")) {
-                if (!namespace.getMetadata().equals(null) && !namespace.getMetadata().getLabels().containsKey("liqo.io/remote-cluster-id")){
+            if (!namespacesToExclude.contains(namespace.getMetadata().getName())
+                    && !namespace.getMetadata().getName().contains("remote-cluster")) {
+                if (!namespace.getMetadata().equals(null)
+                        && !namespace.getMetadata().getLabels().containsKey("liqo.io/remote-cluster-id")) {
                     providerNamespaceList.addItemsItem(namespace);
-                }else{
+                } else {
                     consumerNamespaceList.addItemsItem(namespace);
                 }
             }
@@ -539,9 +621,9 @@ public class KubernetesController {
 
             if (configMap != null) {
                 String networkIntent = configMap.getData().get("networkIntents");
-                System.out.println("ConfigMap found for namespace: "+namespace);
+                System.out.println("ConfigMap found for namespace: " + namespace);
                 JsonArray jsonArray = JsonParser.parseString(networkIntent).getAsJsonArray();
-                for (JsonElement jsonElement : jsonArray){
+                for (JsonElement jsonElement : jsonArray) {
                     KubernetesNetworkFilteringCondition condition = new KubernetesNetworkFilteringCondition();
                     JsonObject jsonObject = jsonElement.getAsJsonObject();
                     JsonObject source = jsonObject.getAsJsonObject("source");
@@ -549,15 +631,15 @@ public class KubernetesController {
 
                     condition.setSource(parseResourceSelector(source.getAsJsonObject("resourceSelector")));
                     condition.setDestination(parseResourceSelector(destination.getAsJsonObject("resourceSelector")));
-                    if (source.has("sourcePort") && !source.get("sourcePort").isJsonNull()){
+                    if (source.has("sourcePort") && !source.get("sourcePort").isJsonNull()) {
                         condition.setSourcePort(source.get("sourcePort").getAsString());
                     }
-            
-                    if (jsonObject.has("destinationPort") && !jsonObject.get("destinationPort").isJsonNull()){
+
+                    if (jsonObject.has("destinationPort") && !jsonObject.get("destinationPort").isJsonNull()) {
                         condition.setDestinationPort(jsonObject.get("destinationPort").getAsString());
                     }
-            
-                    if (jsonObject.has("protocolType") && !jsonObject.get("protocolType").isJsonNull()){
+
+                    if (jsonObject.has("protocolType") && !jsonObject.get("protocolType").isJsonNull()) {
                         condition.setProtocolType(ProtocolType.valueOf(jsonObject.get("protocolType").getAsString()));
                     }
                     ConfigurationRule rule = new ConfigurationRule();
@@ -565,34 +647,34 @@ public class KubernetesController {
                     rule.setName(configMap.getData().get("name"));
 
                     KubernetesNetworkFilteringAction action = new KubernetesNetworkFilteringAction();
-                    if (configMap.getData().get("action") != null){
+                    if (configMap.getData().get("action") != null) {
                         action.setKubernetesNetworkFilteringActionType(configMap.getData().get("action"));
                         rule.setConfigurationRuleAction(action);
                     }
 
-                    if(configMap.getData().get("isCNF") != null){
-                        boolean isCNF=false;
-                        if(configMap.getData().get("isCNF").equals(true)){
-                            isCNF=true;
+                    if (configMap.getData().get("isCNF") != null) {
+                        boolean isCNF = false;
+                        if (configMap.getData().get("isCNF").equals(true)) {
+                            isCNF = true;
                         }
                         rule.setIsCNF(isCNF);
                     }
-                    
-                    if(configMap.getData().get("acceptMonitoring") != null){
-                        boolean acceptMonitoring=false;
-                        if(configMap.getData().get("acceptMonitoring").equals("true")){
-                            acceptMonitoring=true;
+
+                    if (configMap.getData().get("acceptMonitoring") != null) {
+                        boolean acceptMonitoring = false;
+                        if (configMap.getData().get("acceptMonitoring").equals("true")) {
+                            acceptMonitoring = true;
                         }
                         requestIntent.setAcceptMonitoring(acceptMonitoring);
                     }
 
-                    if(configMap.getData().get("priority") != null){
+                    if (configMap.getData().get("priority") != null) {
                         Priority prio = new Priority();
                         BigInteger bigPrio = new BigInteger(configMap.getData().get("priority"));
                         prio.setValue(bigPrio);
                         rule.setExternalData(prio);
                     }
-                    
+
                     requestIntent.getConfigurationRule().add(rule);
                 }
                 return requestIntent;
@@ -610,47 +692,47 @@ public class KubernetesController {
         try {
             CustomObjectsApi customObjectsApi = new CustomObjectsApi(client);
             Watch<JsonObject> watch = Watch.createWatch(
-                client,
-                customObjectsApi.listNamespacedCustomObjectCall(
-                    "advertisement.fluidos.eu",
-                    "v1alpha1",
-                    "fluidos",
-                    "peeringcandidates",
-                    null,
-                    null,
-                    null,
-                    null,
-                    null,
-                    null,
-                    null,
-                    null,
-                    null,
-                    true,
-                    null),
-                new TypeToken<Watch.Response<JsonObject>>() {}.getType()
-            );
+                    client,
+                    customObjectsApi.listNamespacedCustomObjectCall(
+                            "advertisement.fluidos.eu",
+                            "v1alpha1",
+                            "fluidos",
+                            "peeringcandidates",
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            true,
+                            null),
+                    new TypeToken<Watch.Response<JsonObject>>() {
+                    }.getType());
 
             AtomicBoolean firstTimeToCallVerifier = new AtomicBoolean(false);
             AtomicBoolean timerStarted = new AtomicBoolean(false);
-            List <JsonObject> listTypeData = new ArrayList<>();
+            List<JsonObject> listTypeData = new ArrayList<>();
             String flavorName = new String();
             String peeringCandidateName = new String();
-            List <AuthorizationIntents> listReturnedAuthorizationIntents = new ArrayList<>();
-            List <String> listPeeringCandidateName = new ArrayList<>();
+            List<AuthorizationIntents> listReturnedAuthorizationIntents = new ArrayList<>();
+            List<String> listPeeringCandidateName = new ArrayList<>();
             for (Watch.Response<JsonObject> item : watch) {
                 if (item.type.equals("ADDED")) {
-                    JsonObject peeringCandidate= item.object;
+                    JsonObject peeringCandidate = item.object;
                     peeringCandidateName = peeringCandidate.getAsJsonObject("metadata").get("name").getAsString();
                     JsonObject spec = peeringCandidate.getAsJsonObject("spec");
                     JsonObject flavor = spec.getAsJsonObject("flavor");
                     JsonObject metadata = flavor.getAsJsonObject("metadata");
                     flavorName = metadata.get("name").getAsString();
-                    System.out.println("Peering Candidate: "+peeringCandidateName);
+                    System.out.println("Peering Candidate: " + peeringCandidateName);
                     JsonObject spec1 = flavor.getAsJsonObject("spec");
                     JsonObject flavorType = spec1.getAsJsonObject("flavorType");
                     JsonObject typeData = flavorType.getAsJsonObject("typeData");
                     AuthorizationIntents returnedAuthorizationIntents = accessFlavour(typeData);
-                    if (returnedAuthorizationIntents != null){
+                    if (returnedAuthorizationIntents != null) {
                         listReturnedAuthorizationIntents.add(returnedAuthorizationIntents);
                         listPeeringCandidateName.add(peeringCandidateName);
                     }
@@ -658,17 +740,17 @@ public class KubernetesController {
                     if (timerStarted.compareAndSet(false, true)) {
                         scheduler.schedule(() -> {
                             firstTimeToCallVerifier.set(true);
-                            if (!listReturnedAuthorizationIntents.isEmpty()){
+                            if (!listReturnedAuthorizationIntents.isEmpty()) {
                                 System.out.println("Start the verifier");
-                                callVerifier(listReturnedAuthorizationIntents,listPeeringCandidateName);
+                                callVerifier(listReturnedAuthorizationIntents, listPeeringCandidateName);
                             }
                         }, 5, TimeUnit.SECONDS);
-                    } 
+                    }
                     listTypeData.add(typeData);
-                    if(firstTimeToCallVerifier.get()){
-                        if (!listReturnedAuthorizationIntents.isEmpty()){
+                    if (firstTimeToCallVerifier.get()) {
+                        if (!listReturnedAuthorizationIntents.isEmpty()) {
                             System.out.println("Start the verifier");
-                            callVerifier(listReturnedAuthorizationIntents,listPeeringCandidateName);
+                            callVerifier(listReturnedAuthorizationIntents, listPeeringCandidateName);
                         }
                     }
                 }
@@ -681,12 +763,13 @@ public class KubernetesController {
         }
     }
 
-    AuthorizationIntents accessFlavour (JsonObject typeData){
+    AuthorizationIntents accessFlavour(JsonObject typeData) {
         AuthorizationIntents authorizationIntents = new AuthorizationIntents();
         List<ConfigurationRule> forbiddenConnectionList = authorizationIntents.getForbiddenConnectionList();
         List<ConfigurationRule> mandatoryConnectionList = authorizationIntents.getMandatoryConnectionList();
-        if(typeData != null){
-            if (!typeData.has("properties") || typeData.getAsJsonObject("properties")==null || typeData.getAsJsonObject("properties").isEmpty()  ){
+        if (typeData != null) {
+            if (!typeData.has("properties") || typeData.getAsJsonObject("properties") == null
+                    || typeData.getAsJsonObject("properties").isEmpty()) {
                 return null;
             }
             JsonObject properties = typeData.getAsJsonObject("properties");
@@ -695,7 +778,7 @@ public class KubernetesController {
             Priority prio = new Priority();
             boolean isCNF = false;
             if (networkAuthorizations != null) {
-                if(properties.has("action")){
+                if (properties.has("action")) {
                     action.setKubernetesNetworkFilteringActionType(properties.get("action").getAsString());
                 }
 
@@ -707,55 +790,67 @@ public class KubernetesController {
                     JsonObject externalDataJson = properties.getAsJsonObject("externalData");
                     prio.setValue(externalDataJson.getAsJsonObject("priority").getAsBigInteger());
                 }
-                if (networkAuthorizations.has("deniedCommunications") && networkAuthorizations.has("mandatoryCommunications")) {
-                    if (networkAuthorizations.get("deniedCommunications") != null && networkAuthorizations.get("mandatoryCommunications")!=null){
+                if (networkAuthorizations.has("deniedCommunications")
+                        && networkAuthorizations.has("mandatoryCommunications")) {
+                    if (networkAuthorizations.get("deniedCommunications") != null
+                            && networkAuthorizations.get("mandatoryCommunications") != null) {
                         JsonArray deniedCommunications = networkAuthorizations.getAsJsonArray("deniedCommunications");
-                        populateAuthorizationIntents(deniedCommunications, forbiddenConnectionList,action,prio,isCNF);
-                        JsonArray mandatoryCommunications = networkAuthorizations.getAsJsonArray("mandatoryCommunications");
-                        populateAuthorizationIntents(mandatoryCommunications, mandatoryConnectionList,action,prio,isCNF);   
+                        populateAuthorizationIntents(deniedCommunications, forbiddenConnectionList, action, prio,
+                                isCNF);
+                        JsonArray mandatoryCommunications = networkAuthorizations
+                                .getAsJsonArray("mandatoryCommunications");
+                        populateAuthorizationIntents(mandatoryCommunications, mandatoryConnectionList, action, prio,
+                                isCNF);
                     }
                 } else if (networkAuthorizations.has("mandatoryCommunications")) {
-                    if ( networkAuthorizations.get("mandatoryCommunications")!=null){
-                        JsonArray mandatoryCommunications = networkAuthorizations.getAsJsonArray("mandatoryCommunications");
-                        populateAuthorizationIntents(mandatoryCommunications, mandatoryConnectionList,action,prio,isCNF);
+                    if (networkAuthorizations.get("mandatoryCommunications") != null) {
+                        JsonArray mandatoryCommunications = networkAuthorizations
+                                .getAsJsonArray("mandatoryCommunications");
+                        populateAuthorizationIntents(mandatoryCommunications, mandatoryConnectionList, action, prio,
+                                isCNF);
                     }
                 } else if (networkAuthorizations.has("deniedCommunications")) {
-                    if ( networkAuthorizations.get("deniedCommunications")!=null){
+                    if (networkAuthorizations.get("deniedCommunications") != null) {
                         JsonArray deniedCommunications = networkAuthorizations.getAsJsonArray("deniedCommunications");
-                        populateAuthorizationIntents(deniedCommunications, forbiddenConnectionList,action,prio,isCNF);
+                        populateAuthorizationIntents(deniedCommunications, forbiddenConnectionList, action, prio,
+                                isCNF);
                     }
-                }else {
+                } else {
                     System.out.println("Mandatory Communications and Denied communications not found.");
                 }
             } else {
                 System.out.println("Characteristics not found.");
             }
-            if (authorizationIntents != null && authorizationIntents.getForbiddenConnectionList().size() > 0 && authorizationIntents.getMandatoryConnectionList().size() > 0){
+            if (authorizationIntents != null && authorizationIntents.getForbiddenConnectionList().size() > 0
+                    && authorizationIntents.getMandatoryConnectionList().size() > 0) {
                 return authorizationIntents;
             }
         }
-        return null;    
+        return null;
     }
 
-    private void callVerifier (List<AuthorizationIntents> listReturnedAuthorizationIntents, List<String> names){
+    private void callVerifier(List<AuthorizationIntents> listReturnedAuthorizationIntents, List<String> names) {
         int i = 0;
-        for (AuthorizationIntents authorizationIntents : listReturnedAuthorizationIntents){
-            if (authorizationIntents != null && authorizationIntents.getForbiddenConnectionList().size() > 0 && authorizationIntents.getMandatoryConnectionList().size() > 0){
+        for (AuthorizationIntents authorizationIntents : listReturnedAuthorizationIntents) {
+            if (authorizationIntents != null && authorizationIntents.getForbiddenConnectionList().size() > 0
+                    && authorizationIntents.getMandatoryConnectionList().size() > 0) {
                 HarmonizationController harmonizationController = new HarmonizationController();
-                System.out.println("[+] Processing PeeringCandidate: "+ names.get(i));
-                Boolean value = harmonizationController.verify(createCluster(client,"consumer"),authorizationIntents);
-                if (value){
-                    System.out.println("[+] Result for PeeringCandidate "+ names.get(i) +" from Verifier is: "+ Main.ANSI_GREEN + value + Main.ANSI_RESET);
+                System.out.println("[+] Processing PeeringCandidate: " + names.get(i));
+                Boolean value = harmonizationController.verify(createCluster(client, "consumer"), authorizationIntents);
+                if (value) {
+                    System.out.println("[+] Result for PeeringCandidate " + names.get(i) + " from Verifier is: "
+                            + Main.ANSI_GREEN + value + Main.ANSI_RESET);
                     return;
                 }
-                System.out.println("[+] Result for PeeringCandidate "+ names.get(i) +" from Verifier is: "+ Main.ANSI_RED + value + Main.ANSI_RESET);
+                System.out.println("[+] Result for PeeringCandidate " + names.get(i) + " from Verifier is: "
+                        + Main.ANSI_RED + value + Main.ANSI_RESET);
                 System.out.println(" ");
             }
             i++;
         }
     }
-    
-    private String retrieveFluidosId (ApiClient client) throws ApiException{
+
+    private String retrieveFluidosId(ApiClient client) throws ApiException {
 
         CoreV1Api api = new CoreV1Api(client);
         V1ConfigMap configMap = api.readNamespacedConfigMap("fluidos-network-manager-identity", "fluidos", null);
@@ -763,28 +858,28 @@ public class KubernetesController {
         return nodeID;
     }
 
-    private void populateAuthorizationIntents(JsonArray communications, List<ConfigurationRule> connectionList,KubernetesNetworkFilteringAction action,Priority prio,boolean isCNF) {
+    private void populateAuthorizationIntents(JsonArray communications, List<ConfigurationRule> connectionList,
+            KubernetesNetworkFilteringAction action, Priority prio, boolean isCNF) {
         for (JsonElement comm : communications) {
             JsonObject communication = comm.getAsJsonObject();
-            
 
             KubernetesNetworkFilteringCondition condition = new KubernetesNetworkFilteringCondition();
-            
+
             JsonObject source = communication.getAsJsonObject("source");
             JsonObject destination = communication.getAsJsonObject("destination");
 
             condition.setSource(parseResourceSelector(source.getAsJsonObject("resourceSelector")));
             condition.setDestination(parseResourceSelector(destination.getAsJsonObject("resourceSelector")));
 
-            if (communication.has("sourcePort") && !communication.get("sourcePort").isJsonNull()){
+            if (communication.has("sourcePort") && !communication.get("sourcePort").isJsonNull()) {
                 condition.setSourcePort(communication.get("sourcePort").getAsString());
             }
 
-            if (communication.has("destinationPort") && !communication.get("destinationPort").isJsonNull()){
+            if (communication.has("destinationPort") && !communication.get("destinationPort").isJsonNull()) {
                 condition.setDestinationPort(communication.get("destinationPort").getAsString());
             }
 
-            if (communication.has("protocolType") && !communication.get("protocolType").isJsonNull()){
+            if (communication.has("protocolType") && !communication.get("protocolType").isJsonNull()) {
                 condition.setProtocolType(ProtocolType.valueOf(communication.get("protocolType").getAsString()));
             }
 
@@ -792,14 +887,13 @@ public class KubernetesController {
             rule.setConfigurationCondition(condition);
             rule.setName(communication.get("name").getAsString());
 
-
             rule.setConfigurationRuleAction(action);
             rule.setExternalData(prio);
             rule.setIsCNF(isCNF);
             connectionList.add(rule);
         }
 
-    }   
+    }
 
     private ResourceSelector parseResourceSelector(JsonObject resourceSelector) {
         ResourceSelector selector = null;
@@ -856,44 +950,45 @@ public class KubernetesController {
             List<ConfigurationRule> mandatoryConnectionList = authorizationIntents.getMandatoryConnectionList();
             if (mandatoryConnectionList != null) {
                 for (ConfigurationRule cr : mandatoryConnectionList) {
-                        KubernetesNetworkFilteringCondition cond = (KubernetesNetworkFilteringCondition) cr.getConfigurationCondition();
-                        System.out.println("Source:");
-                        if(cond.getSource().getClass().equals(PodNamespaceSelector.class)){
-                            PodNamespaceSelector pns = (PodNamespaceSelector) cond.getSource();
-                            for (KeyValue namespace: pns.getNamespace()){
-                                System.out.println("namespace");
-                                System.out.println("key:"+namespace.getKey()+" "+"value: "+namespace.getValue());
-                            }
-                            for (KeyValue pod: pns.getPod()){
-                                System.out.println("pod");
-                                System.out.println("key:"+pod.getKey()+" "+"value: "+pod.getValue());
-                            }
-                        } else {
-                            CIDRSelector CIDRAddress = (CIDRSelector) cond.getSource();
-                            System.out.println("cidrDestination: "+CIDRAddress.getAddressRange());
-
+                    KubernetesNetworkFilteringCondition cond = (KubernetesNetworkFilteringCondition) cr
+                            .getConfigurationCondition();
+                    System.out.println("Source:");
+                    if (cond.getSource().getClass().equals(PodNamespaceSelector.class)) {
+                        PodNamespaceSelector pns = (PodNamespaceSelector) cond.getSource();
+                        for (KeyValue namespace : pns.getNamespace()) {
+                            System.out.println("namespace");
+                            System.out.println("key:" + namespace.getKey() + " " + "value: " + namespace.getValue());
                         }
-                        System.out.println("Destination:");
-                        if(cond.getDestination().getClass().equals(PodNamespaceSelector.class)){
-                            PodNamespaceSelector pns = (PodNamespaceSelector) cond.getDestination();
-                            for (KeyValue namespace: pns.getNamespace()){
-                                System.out.println("namespace");
-                                System.out.println("key:"+namespace.getKey()+" "+"value: "+namespace.getValue());
-                            }
-                            for (KeyValue pod: pns.getPod()){
-                                System.out.println("pod");
-                                System.out.println("key:"+pod.getKey()+" "+"value: "+pod.getValue());
-                            }
-                        } else {
-                            CIDRSelector CIDRAddress = (CIDRSelector) cond.getDestination();
-                            System.out.println("cidrDestination: "+CIDRAddress.getAddressRange());
-
+                        for (KeyValue pod : pns.getPod()) {
+                            System.out.println("pod");
+                            System.out.println("key:" + pod.getKey() + " " + "value: " + pod.getValue());
                         }
-                        String destPort = cond.getDestinationPort();
-                        System.out.println("DestinationPort: "+destPort);
-                        String proto = cond.getProtocolType().getClass().toString();
-                        System.out.println("ProtocolType: "+proto);
-                        
+                    } else {
+                        CIDRSelector CIDRAddress = (CIDRSelector) cond.getSource();
+                        System.out.println("cidrDestination: " + CIDRAddress.getAddressRange());
+
+                    }
+                    System.out.println("Destination:");
+                    if (cond.getDestination().getClass().equals(PodNamespaceSelector.class)) {
+                        PodNamespaceSelector pns = (PodNamespaceSelector) cond.getDestination();
+                        for (KeyValue namespace : pns.getNamespace()) {
+                            System.out.println("namespace");
+                            System.out.println("key:" + namespace.getKey() + " " + "value: " + namespace.getValue());
+                        }
+                        for (KeyValue pod : pns.getPod()) {
+                            System.out.println("pod");
+                            System.out.println("key:" + pod.getKey() + " " + "value: " + pod.getValue());
+                        }
+                    } else {
+                        CIDRSelector CIDRAddress = (CIDRSelector) cond.getDestination();
+                        System.out.println("cidrDestination: " + CIDRAddress.getAddressRange());
+
+                    }
+                    String destPort = cond.getDestinationPort();
+                    System.out.println("DestinationPort: " + destPort);
+                    String proto = cond.getProtocolType().getClass().toString();
+                    System.out.println("ProtocolType: " + proto);
+
                 }
                 System.out.println(" ");
             }
@@ -901,42 +996,43 @@ public class KubernetesController {
             List<ConfigurationRule> deniedConnectionList = authorizationIntents.getForbiddenConnectionList();
             if (deniedConnectionList != null) {
                 for (ConfigurationRule cr : deniedConnectionList) {
-                        KubernetesNetworkFilteringCondition cond = (KubernetesNetworkFilteringCondition) cr.getConfigurationCondition();
-                        System.out.println("Source:");
-                        if(cond.getSource().getClass().equals(PodNamespaceSelector.class)){
-                            PodNamespaceSelector pns = (PodNamespaceSelector) cond.getSource();
-                            for (KeyValue namespace: pns.getNamespace()){
-                                System.out.println("namespace");
-                                System.out.println("key:"+namespace.getKey()+" "+"value: "+namespace.getValue());
-                            }
-                            for (KeyValue pod: pns.getPod()){
-                                System.out.println("pod");
-                                System.out.println("key:"+pod.getKey()+" "+"value: "+pod.getValue());
-                            }
-                        } else {
-                            CIDRSelector CIDRAddress = (CIDRSelector) cond.getSource();
-                            System.out.println("cidrDestination: "+CIDRAddress.getAddressRange());
-
+                    KubernetesNetworkFilteringCondition cond = (KubernetesNetworkFilteringCondition) cr
+                            .getConfigurationCondition();
+                    System.out.println("Source:");
+                    if (cond.getSource().getClass().equals(PodNamespaceSelector.class)) {
+                        PodNamespaceSelector pns = (PodNamespaceSelector) cond.getSource();
+                        for (KeyValue namespace : pns.getNamespace()) {
+                            System.out.println("namespace");
+                            System.out.println("key:" + namespace.getKey() + " " + "value: " + namespace.getValue());
                         }
-                        System.out.println("Destination:");
-                        if(cond.getDestination().getClass().equals(PodNamespaceSelector.class)){
-                            PodNamespaceSelector pns = (PodNamespaceSelector) cond.getDestination();
-                            for (KeyValue namespace: pns.getNamespace()){
-                                System.out.println("namespace");
-                                System.out.println("key:"+namespace.getKey()+" "+"value: "+namespace.getValue());
-                            }
-                            for (KeyValue pod: pns.getPod()){
-                                System.out.println("pod");
-                                System.out.println("key:"+pod.getKey()+" "+"value: "+pod.getValue());
-                            }
-                        } else {
-                            CIDRSelector CIDRAddress = (CIDRSelector) cond.getDestination();
-                            System.out.println("cidrDestination: "+CIDRAddress.getAddressRange());
-
+                        for (KeyValue pod : pns.getPod()) {
+                            System.out.println("pod");
+                            System.out.println("key:" + pod.getKey() + " " + "value: " + pod.getValue());
                         }
-                        String destPort = cond.getDestinationPort();
-                        System.out.println("DestinationPort: "+destPort);
-                        
+                    } else {
+                        CIDRSelector CIDRAddress = (CIDRSelector) cond.getSource();
+                        System.out.println("cidrDestination: " + CIDRAddress.getAddressRange());
+
+                    }
+                    System.out.println("Destination:");
+                    if (cond.getDestination().getClass().equals(PodNamespaceSelector.class)) {
+                        PodNamespaceSelector pns = (PodNamespaceSelector) cond.getDestination();
+                        for (KeyValue namespace : pns.getNamespace()) {
+                            System.out.println("namespace");
+                            System.out.println("key:" + namespace.getKey() + " " + "value: " + namespace.getValue());
+                        }
+                        for (KeyValue pod : pns.getPod()) {
+                            System.out.println("pod");
+                            System.out.println("key:" + pod.getKey() + " " + "value: " + pod.getValue());
+                        }
+                    } else {
+                        CIDRSelector CIDRAddress = (CIDRSelector) cond.getDestination();
+                        System.out.println("cidrDestination: " + CIDRAddress.getAddressRange());
+
+                    }
+                    String destPort = cond.getDestinationPort();
+                    System.out.println("DestinationPort: " + destPort);
+
                 }
             }
             System.out.println(" ");
@@ -964,19 +1060,21 @@ public class KubernetesController {
         return false;
     }
 
-    private void CreateNetworkPolicies (ApiClient client,String Namespace){
+    private void CreateNetworkPolicies(ApiClient client, String Namespace) {
         NetworkingV1Api api = new NetworkingV1Api(client);
         List<File> files = getFilesInFolder("/app/network_policies/");
         for (File file : files) {
             try {
-            String yamlContent = new String(Files.readAllBytes(file.toPath()));
-            V1NetworkPolicy networkPolicy = Yaml.loadAs(yamlContent, V1NetworkPolicy.class);
+                String yamlContent = new String(Files.readAllBytes(file.toPath()));
+                V1NetworkPolicy networkPolicy = Yaml.loadAs(yamlContent, V1NetworkPolicy.class);
                 try {
-                if (networkPolicy.getMetadata().getNamespace().equals(Namespace)){
-                    api.createNamespacedNetworkPolicy(networkPolicy.getMetadata().getNamespace(), networkPolicy, null, null, null);
-                    System.out.println("NetworkPolicy: "+networkPolicy.getMetadata().getName()+" applied to namespace "+ Namespace);
-                }
-                } catch (ApiException e){
+                    if (networkPolicy.getMetadata().getNamespace().equals(Namespace)) {
+                        api.createNamespacedNetworkPolicy(networkPolicy.getMetadata().getNamespace(), networkPolicy,
+                                null, null, null);
+                        System.out.println("NetworkPolicy: " + networkPolicy.getMetadata().getName()
+                                + " applied to namespace " + Namespace);
+                    }
+                } catch (ApiException e) {
                 }
             } catch (IOException e) {
                 System.err.println("Error");
@@ -987,7 +1085,7 @@ public class KubernetesController {
     public List<File> getFilesInFolder(String folderPath) {
         List<File> files = new ArrayList<>();
         File folder = new File(folderPath);
-        
+
         if (folder.exists() && folder.isDirectory()) {
             File[] fileList = folder.listFiles();
             for (File file : fileList) {
@@ -996,7 +1094,7 @@ public class KubernetesController {
                 }
             }
         }
-        
+
         return files;
     }
 
@@ -1015,7 +1113,7 @@ public class KubernetesController {
         V1NetworkPolicySpec ingressPolicySpec = new V1NetworkPolicySpec();
         ingressPolicySpec.setPodSelector(new V1LabelSelector());
         ingressPolicySpec.setPolicyTypes(Arrays.asList("Ingress"));
-        ingressPolicySpec.setIngress(Collections.emptyList()); 
+        ingressPolicySpec.setIngress(Collections.emptyList());
         ingressPolicy.setMetadata(new V1ObjectMeta().name(Namespace + "-deny-ingress").namespace(Namespace));
         ingressPolicy.setSpec(ingressPolicySpec);
 
@@ -1028,8 +1126,9 @@ public class KubernetesController {
         }
     }
 
-    public void createNetworkPolicyForIPRange(ApiClient client, V1Namespace namespace,String clusterId) throws ApiException {
-        Configuration.setDefaultApiClient(client);  
+    public void createNetworkPolicyForIPRange(ApiClient client, V1Namespace namespace, String clusterId)
+            throws ApiException {
+        Configuration.setDefaultApiClient(client);
         String offloadedNamespace = namespace.getMetadata().getName();
 
         NetworkingV1Api networkingApi = new NetworkingV1Api(client);
@@ -1040,17 +1139,19 @@ public class KubernetesController {
                         .name("allow-comunication-with-offloaded-pods-" + offloadedNamespace)
                         .namespace(offloadedNamespace))
                 .spec(new V1NetworkPolicySpec()
-                        .policyTypes(List.of("Ingress", "Egress"))  
-                        .podSelector(new V1LabelSelector())  
-                        .ingress(buildIngressRules(this.allowedIpList.get(clusterId)))  
-                        .egress(buildEgressRules(this.allowedIpList.get(clusterId)))); 
+                        .policyTypes(List.of("Ingress", "Egress"))
+                        .podSelector(new V1LabelSelector())
+                        .ingress(buildIngressRules(this.allowedIpList.get(clusterId)))
+                        .egress(buildEgressRules(this.allowedIpList.get(clusterId))));
 
-        System.out.println ("Network Policies to allow traffic between offloaded pods and local ones applied to namespace: "+offloadedNamespace);
+        System.out.println(
+                "Network Policies to allow traffic between offloaded pods and local ones applied to namespace: "
+                        + offloadedNamespace);
         networkingApi.createNamespacedNetworkPolicy(offloadedNamespace, combinedPolicy, null, null, null);
     }
-    
-    private List<V1NetworkPolicyEgressRule> buildEgressRules(List<String> ipAddress) {        
-        if(ipAddress == null){
+
+    private List<V1NetworkPolicyEgressRule> buildEgressRules(List<String> ipAddress) {
+        if (ipAddress == null) {
             return Collections.emptyList();
         }
         return ipAddress.stream()
@@ -1061,7 +1162,7 @@ public class KubernetesController {
     }
 
     private List<V1NetworkPolicyIngressRule> buildIngressRules(List<String> ipAddress) {
-        if(ipAddress == null){
+        if (ipAddress == null) {
             return Collections.emptyList();
         }
         return ipAddress.stream()
@@ -1071,14 +1172,14 @@ public class KubernetesController {
                 .toList();
     }
 
-
-    public void createAllowKubeDNSNetworkPolicy(ApiClient client,String namespace) {
+    public void createAllowKubeDNSNetworkPolicy(ApiClient client, String namespace) {
         try {
             V1NetworkPolicy networkPolicy = new V1NetworkPolicy();
 
             networkPolicy.setApiVersion("networking.k8s.io/v1");
             networkPolicy.setKind("NetworkPolicy");
-            networkPolicy.setMetadata(new V1ObjectMeta().name("default-allow-kubedns-"+namespace).namespace(namespace));
+            networkPolicy
+                    .setMetadata(new V1ObjectMeta().name("default-allow-kubedns-" + namespace).namespace(namespace));
 
             networkPolicy.setSpec(new V1NetworkPolicySpec()
                     .podSelector(new V1LabelSelector())
@@ -1089,18 +1190,17 @@ public class KubernetesController {
                                             new V1NetworkPolicyPeer()
                                                     .namespaceSelector(
                                                             new V1LabelSelector()
-                                                                    .matchLabels(Collections.singletonMap("kubernetes.io/metadata.name", "kube-system"))
-                                                    )
+                                                                    .matchLabels(Collections.singletonMap(
+                                                                            "kubernetes.io/metadata.name",
+                                                                            "kube-system")))
                                                     .podSelector(
                                                             new V1LabelSelector()
-                                                                    .matchLabels(Collections.singletonMap("k8s-app", "kube-dns"))
-                                                    )
-                                    ))
-                    ))
-            );
+                                                                    .matchLabels(Collections.singletonMap("k8s-app",
+                                                                            "kube-dns"))))))));
             NetworkingV1Api api = new NetworkingV1Api(client);
             api.createNamespacedNetworkPolicy(namespace, networkPolicy, null, null, null);
-            System.out.println("Network Policy successfully created to allow traffic to kube-dns in namespace " + namespace);
+            System.out.println(
+                    "Network Policy successfully created to allow traffic to kube-dns in namespace " + namespace);
         } catch (ApiException e) {
             System.err.println("Error while creating Network Policy: " + e.getResponseBody());
             e.printStackTrace();
@@ -1111,4 +1211,3 @@ public class KubernetesController {
         System.out.println(Main.ANSI_PURPLE + "-".repeat(100) + Main.ANSI_RESET);
     }
 }
-

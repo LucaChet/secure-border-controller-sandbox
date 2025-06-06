@@ -40,3 +40,24 @@ Si potrebbe quasi rinominare per coerenza con il nome del progetto, essendo il c
 - tutte le classi definite in gen-src? Sono generate automaticamente da JAXB?
 - HarmonizationUtils.java è fatto tutto da Chat: per coerenza col resto lo renderei più "human written"
 - Perchè la classe `HarmonizationService` sembra essere specializzata per la demo? (definisce il metodo `createProviderCluster` e fa uso dei files hardcoded)?
+
+## TODO: sync 1
+1. ✅ aggiungere `"liqo"` direttamente nella lista dei namespaces da escludere (`namespacesToExclude`), per snellire il controllo sui namespaces.
+>   ⚠️ Se il namespace `"liqo"` cambia nome ad esempio con tag casuali, questo approccio è da rivedere
+2. ✅ nel watcher `watchNamespaces`, quando un NS viene eliminato sarebbe quantomeno da togliere dalla lista dei NS offloaded, locale al controller, chiamata `offloadedNamespaces`
+3. ✅ nel watcher `watchNamespaces`, quando un namespace viene modificato, il controllo è incoerente con le altre due condizioni (namespace `ADDED` e `DELETED`): da implementare check che il namespace sia offloadato, non che non sia tra quelli da escludere
+4. ✅ migliorare la leggibilità e la funzionalità della funzione `startModuleTimer`, rimuovere il catch vuoto
+5.  sostituire timer di 5s con attesa automatica della risorsa `networkRequests` affinchè quando questa è pronta si esegua l'operazione
+6. ✅ rimuovere il thread `applyDefaultNetworkPolicies` spostandone la logica dentro al watcher dei namespace
+>   ⚠️ Da testare
+7. migliorare la funzione `verify`, rimuovendo il riferimento hardcoded al file XML contenente gli intenti in MSPL.
+>   ⚠️ Possibili soluzioni:
+>    - Usare un file di configurazione esterno
+>    - Usare una variabile d'ambiente
+>    - altro..?
+8. ❌ testare la funzione `verify` così da avere prova che funzioni, scoprire perchè passa il check sul primo peeringcandidate
+9. la funzione `createProviderCluster` *non ha senso* 
+10. per testare il controllore come componente di un cluster KinD: 
+    - compilare il codice sorgente
+    - creare una nuova docker image usando il Dockerfile
+    - cambiare il template del manifesto YAML

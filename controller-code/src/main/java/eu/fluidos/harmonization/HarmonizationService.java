@@ -116,7 +116,8 @@ public class HarmonizationService{
 			intents_1 = (ITResourceOrchestrationType) ((JAXBElement<?>) tmp_1).getValue();
 		} catch (Exception e) {
 			System.out.println(e);
-			System.exit(1);
+			// System.exit(1);
+			return false;
 		}
 
 		ITResourceOrchestrationType consumerIntents = intents_1;
