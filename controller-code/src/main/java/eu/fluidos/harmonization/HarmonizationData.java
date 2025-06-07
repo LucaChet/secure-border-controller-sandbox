@@ -10,17 +10,26 @@ import java.util.*;
 public class HarmonizationData {
 
 	private static final Logger loggerInfo = LogManager.getLogger("harmonization");
-	private final Scanner scan = new Scanner(System.in);
 
+	/**
+	 * This method verifies if the requested intents of the consumer are compatible
+	 * with the authorization intents of the provider.
+	 * It checks for overlaps between the requested configuration rules and the
+	 * forbidden connection list.
+	 *
+	 * @param requestIntent                  The requested intents from the consumer.
+	 * @param authIntent                     The authorization intents from the provider.
+	 * @param podsByNamespaceAndLabelsConsumer The map of pods by namespace and labels for the consumer.
+	 * @param podsByNamespaceAndLabelsProvider The map of pods by namespace and labels for the provider.
+	 * @return true if request and authorization intents are compatible, false otherwise.
+	 */
 	public boolean verify(RequestIntents requestIntent,
 			AuthorizationIntents authIntent,
 			HashMap<String, HashMap<String, List<Pod>>> podsByNamespaceAndLabelsConsumer,
 			HashMap<String, HashMap<String, List<Pod>>> podsByNamespaceAndLabelsProvider) {
+		
 		System.out.println("[VERIFY] Process started...");
 		for (ConfigurationRule cr : requestIntent.getConfigurationRule()) {
-			KubernetesNetworkFilteringCondition cond = (KubernetesNetworkFilteringCondition) cr
-					.getConfigurationCondition();
-
 			if (!verifyConfigurationRule(cr, authIntent.getForbiddenConnectionList(),
 					podsByNamespaceAndLabelsConsumer, podsByNamespaceAndLabelsProvider)) {
 				return false;
@@ -29,13 +38,22 @@ public class HarmonizationData {
 		return true;
 	}
 
-	/*
-	 * Se almeno uno dei campi non ha sovrapposizione, non ci può essere
-	 * sovrapposizione -> true
+	/**
+	 * This method verifies if a single configuration rule overlaps with any of the
+	 * connection rules in the provided list.
+	 * It checks for overlaps in protocol type, port ranges, source, and destination
+	 * selectors.
+	 *
+	 * @param cr          The configuration rule to verify.
+	 * @param connList    The list of connection rules to check against.
+	 * @param map_conn    The map of pods by namespace and labels for the consumer.
+	 * @param map_connList The map of pods by namespace and labels for the provider.
+	 * @return true if there is no overlap, false otherwise.
 	 */
 	private boolean verifyConfigurationRule(ConfigurationRule cr, List<ConfigurationRule> connList,
 			HashMap<String, HashMap<String, List<Pod>>> map_conn,
 			HashMap<String, HashMap<String, List<Pod>>> map_connList) {
+				
 		ConfigurationRule res = HarmonizationUtils.deepCopyConfigurationRule(cr);
 		KubernetesNetworkFilteringCondition resCond = (KubernetesNetworkFilteringCondition) res
 				.getConfigurationCondition();
@@ -45,36 +63,34 @@ public class HarmonizationData {
 			boolean overlapSrc;
 			boolean overlapDst;
 
-			KubernetesNetworkFilteringCondition tmp = (KubernetesNetworkFilteringCondition) confRule
+			KubernetesNetworkFilteringCondition tmpCond = (KubernetesNetworkFilteringCondition) confRule
 					.getConfigurationCondition();
 
 			loggerInfo.debug("[VERIFY] - processing rule "
 					+ HarmonizationUtils.kubernetesNetworkFilteringConditionToString(resCond) + " vs. "
-					+ HarmonizationUtils.kubernetesNetworkFilteringConditionToString(tmp));
+					+ HarmonizationUtils.kubernetesNetworkFilteringConditionToString(tmpCond));
 
-			// Step-1.1: starts with the simplest case, that is protocol type. Detect if
-			// protocol types of res are overlapping with tmp.
-			overlap = HarmonizationUtils.computeVerifyProtocolType(resCond.getProtocolType().value(),
-					tmp.getProtocolType().value());
+			// Step-1: starts with protocol type. Detect if protocol types of res are overlapping with tmpCond.
+			overlap = HarmonizationUtils.verifyProtocolType(resCond.getProtocolType().value(),
+					tmpCond.getProtocolType().value());
 
-			// Step-1.2: check the ports. Detect if the port ranges of res are overlapping
-			// with tmp.
-			overlapDstPort = HarmonizationUtils.computeVerifiedPortRange(resCond.getDestinationPort(),
-					tmp.getDestinationPort());
+			// Step-2: check the ports. Detect if the port ranges of res are overlapping with tmpCond.
+			overlapDstPort = HarmonizationUtils.verifyPortRange(resCond.getDestinationPort(),
+					tmpCond.getDestinationPort());
 
-			// Step-1.3: check the source and destination.s
+			// Step-3: check the source and destination.
+			overlapSrc = HarmonizationUtils.verifyResourceSelector(resCond.getSource(),
+					tmpCond.getSource());
+			overlapDst = HarmonizationUtils.verifyResourceSelector(resCond.getDestination(),
+					tmpCond.getDestination());
 
-			overlapSrc = HarmonizationUtils.computeOverlapResourceSelector(resCond.getSource(),
-					tmp.getSource());
-
-			overlapDst = HarmonizationUtils.computeOverlapResourceSelector(resCond.getDestination(),
-					tmp.getDestination());
-
+			// Step-4: to have overlap, all the previous checks must be true.
 			if (overlap && overlapSrc && overlapDst && overlapDstPort) {
 				System.out.println("[VERIFY] - Found discordance between intents. ");
 				return false;
 			}
 		}
+		// If all the rules into connList have been processed, it means that cr has no overlap with conn
 		return true;
 	}
 
@@ -82,19 +98,20 @@ public class HarmonizationData {
 	 * Discordances of Type-1 happens when the Requested Intents of the consumer are
 	 * not all authorized by the provider.
 	 * This function gets all the consumer.Requested connections and perform the set
-	 * operation:
-	 * (consumer.Requested) - (provider.AuthorizationIntents.deniedConnectionsList)
-	 * i.e., remove from the requested connections those overlapping with the
-	 * forbidden ones.
+	 * operation: (consumer.Requested) - (provider.AuthorizationIntents.deniedConnectionsList)
+	 *
+	 * @param requestIntent                  The requested intents from the consumer.
+	 * @param authIntent                     The authorization intents from the provider.
+	 * @param podsByNamespaceAndLabelsConsumer The map of pods by namespace and labels for the consumer.
+	 * @param podsByNamespaceAndLabelsProvider The map of pods by namespace and labels for the provider.
+	 * @return A list of harmonized configuration rules that represent the harmonized request intents of the consumer.
 	 */
-
 	public List<ConfigurationRule> solveTypeOneDiscordances(RequestIntents requestIntent,
 			AuthorizationIntents authIntent,
 			HashMap<String, HashMap<String, List<Pod>>> podsByNamespaceAndLabelsConsumer,
 			HashMap<String, HashMap<String, List<Pod>>> podsByNamespaceAndLabelsProvider) {
 		List<ConfigurationRule> harmonizedRules = new ArrayList<>();
 
-		// External loop over the consumer's Request Intents.
 		for (ConfigurationRule cr : requestIntent.getConfigurationRule()) {
 			loggerInfo.debug("[harmonization/harmonizeForbiddenConnectionIntent] - processing rule { [" + cr.getName()
 					+ "]" + HarmonizationUtils.kubernetesNetworkFilteringConditionToString(
@@ -113,8 +130,16 @@ public class HarmonizationData {
 	 * provider is not completely satisfied by the consumer.
 	 * If this happens, additional rules are added to the Harmonized-Request set of
 	 * the consumer.
+	 * Similar to Type-1, but in this case the harmonization corresponds to the
+	 * operation harmonizedRequestIntents + (mandatoryConnectionList - harmonizedRequestIntents). 
+	 * 
+	 * @param harmonizedRequestConsumerRules The harmonized request rules of the consumer (result of Type-1).
+	 * @param requestIntent                  The requested intents from the consumer.
+	 * @param authIntent                     The authorization intents from the provider.
+	 * @param podsByNamespaceAndLabelsProvider The map of pods by namespace and labels for the provider.
+	 * @param podsByNamespaceAndLabelsConsumer The map of pods by namespace and labels for the consumer.
+	 * @return A list of harmonized configuration rules that represent the harmonized request intents of the consumer.
 	 */
-
 	public List<ConfigurationRule> solverTypeTwoDiscordances(List<ConfigurationRule> harmonizedRequestConsumerRules,
 			RequestIntents requestIntent, AuthorizationIntents authIntent,
 			HashMap<String, HashMap<String, List<Pod>>> podsByNamespaceAndLabelsProvider,
@@ -125,15 +150,8 @@ public class HarmonizationData {
 			return null;
 		else {
 			harmonizedRules.addAll(harmonizedRequestConsumerRules);
-			/*
-			 * Like TYPE-1 but computing the difference between the mandatoryConnectionList
-			 * of the provider and the harmonizedRequestIntents of the consumer. Then, the
-			 * resulting harmonizedRequestIntents = harmonizedRequestIntents +
-			 * (mandatoryConnectionList - harmonizedRequestIntents).
-			 */
 			for (ConfigurationRule cr_provider : authIntent.getMandatoryConnectionList()) {
-				KubernetesNetworkFilteringCondition tmp1 = (KubernetesNetworkFilteringCondition) cr_provider
-						.getConfigurationCondition();
+				//KubernetesNetworkFilteringCondition tmp1 = (KubernetesNetworkFilteringCondition) cr_provider.getConfigurationCondition();
 				List<ConfigurationRule> tmp = harmonizeConfigurationRule(cr_provider, harmonizedRules,
 						podsByNamespaceAndLabelsProvider, podsByNamespaceAndLabelsConsumer);
 				for (ConfigurationRule cr : tmp)
@@ -149,8 +167,8 @@ public class HarmonizationData {
 	 * hosting cluster.
 	 * If this happens, additional rules are added to the harmonized-Request set of
 	 * the provider in order to create the "hole".
+	 * 
 	 */
-
 	public List<ConfigurationRule> solverTypeThreeDiscordances(List<ConfigurationRule> harmonizedRequestConsumerRules,
 			RequestIntents requestIntent, HashMap<String, HashMap<String, List<Pod>>> podsByNamespaceAndLabelsConsumer,
 			HashMap<String, HashMap<String, List<Pod>>> podsByNamespaceAndLabelsProvider) {
@@ -358,6 +376,8 @@ public class HarmonizationData {
 				+ HarmonizationUtils.kubernetesNetworkFilteringConditionToString(resCond1) + "}");
 		return res1;
 	}
+
+	//TODO: think of moving all the following to a utility class
 
 	public void printDash() {
 		System.out.println(Main.ANSI_PURPLE + "-".repeat(100) + Main.ANSI_RESET);

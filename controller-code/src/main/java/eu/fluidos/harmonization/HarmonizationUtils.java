@@ -2,13 +2,141 @@ package eu.fluidos.harmonization;
 
 import eu.fluidos.*;
 import eu.fluidos.jaxb.*;
+import jakarta.xml.bind.JAXBContext;
+import jakarta.xml.bind.JAXBElement;
+import jakarta.xml.bind.Unmarshaller;
 
+import java.io.File;
+import java.io.FileInputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import javax.xml.XMLConstants;
+import javax.xml.validation.Schema;
+import javax.xml.validation.SchemaFactory;
+
 public class HarmonizationUtils {
+
+
+	/*---------------------------------------------------------- */
+	/*---------------------VERIFY UTILS--------------------------*/
+	/*---------------------------------------------------------- */
+
+	/**
+	 * Function to check it two port ranges are overlapping.
+	 * @param portRangeX is the first port range.
+	 * @param portRangeY is the second port range.
+	 * @return true if portRangeX is overlapping with portRangeY, false otherwise.
+	 */
+	public static boolean verifyPortRange(String portRangeX, String portRangeY) {
+		portRangeX = portRangeX.equals("*") ? "0-65535" : portRangeX;
+		portRangeY = portRangeY.equals("*") ? "0-65535" : portRangeY;
+
+		String[] x = portRangeX.split("-");
+		String[] y = portRangeY.split("-");
+
+		int x0 = Integer.parseInt(x[0]);
+		int x1 = x.length == 2 ? Integer.parseInt(x[1]) : x0;
+
+		int y0 = Integer.parseInt(y[0]);
+		int y1 = y.length == 2 ? Integer.parseInt(y[1]) : y0;
+
+		return (x0 <= y1 && x1 >= y0);
+	}
+
+	/**
+	 * Function to check if two Protocol types are overlapping. Protocol types can be "ALL", "TCP", "UDP", "SCTP".
+	 * It is sufficient to check if one of the two is "ALL" or if they are equal.
+	 * @param protocol_1 is the first set of protocols.
+	 * @param protocol_2 is the second set of protocols.
+	 * @return true if protocol_1 is overlapping with protocol_2, false otherwise.
+	 */
+	public static boolean verifyProtocolType(String protocol_1, String protocol_2) {
+		return protocol_1.equals(protocol_2) || protocol_1.equals("ALL") || protocol_2.equals("ALL");
+	}
+
+
+	/**
+	 * Function to check if two resourceSelectors are overlapping.
+	 * @param sel_1 is the first resourceSelector.
+	 * @param sel_2 is the second resourceSelector.
+	 * @return true if sel_1 is overlapping with sel_2, false otherwise.
+	 *
+	 */
+	//TODO: check if this formulation could be improved and if it is correct.
+	public static boolean verifyResourceSelector(ResourceSelector sel_1, ResourceSelector sel_2) {
+		Boolean isCIDR_1 = false, isCIDR_2 = false;
+		if(sel_1.getClass().equals(PodNamespaceSelector.class)){
+			isCIDR_1 = false;
+		} else {
+			isCIDR_1 = true;
+		}
+		if(sel_2.getClass().equals(PodNamespaceSelector.class)){
+			isCIDR_2 = false;
+		} else {
+			isCIDR_2 = true;
+		}
+
+		if (isCIDR_1 && isCIDR_2) {
+			CIDRSelector cidr1 = (CIDRSelector) sel_1;
+			CIDRSelector cidr2 = (CIDRSelector) sel_2;
+			// Converts the CIDR strings into two arrays of two integers.
+			int[] ip1 = cidrToIp(cidr1.getAddressRange());
+			int[] ip2 = cidrToIp(cidr2.getAddressRange());
+			// Compute the subnet mask using right shift.
+			int mask1 = (ip1[1]==32)? 0 : -1 >>> ip1[1];
+			int mask2 = (ip2[1]==32)? 0 : -1 >>> ip2[1];
+			// Compute the network addresses using AND between IP addresses and subnet mask.
+			int net1 = ip1[0] & ~mask1;
+			int net2 = ip2[0] & ~mask2;
+			// Compute broadcast addresses (i.e., largest IP address) for both ranges using OR between network addresses and subnet masks negated.
+			int bc1 = ip1[0] | mask1;
+			int bc2 = ip2[0] | mask2;
+			// Check overlap between the two ranges.
+			if(Integer.compareUnsigned(net1, bc2) <= 0 && Integer.compareUnsigned(bc1, net2) >= 0) {
+				return true;
+			} else {
+				return false;
+			}
+		} else if (!isCIDR_1 && !isCIDR_2) {
+			PodNamespaceSelector pns1 = (PodNamespaceSelector) sel_1;
+			PodNamespaceSelector pns2 = (PodNamespaceSelector) sel_2;
+			
+			if (pns1.isIsHostCluster() == pns2.isIsHostCluster()) {
+				return false;
+			}
+			String pns1PodKey = pns1.getPod().get(0).getKey();
+			String pns1PodValue = pns1.getPod().get(0).getValue();
+			String pns2PodKey = pns2.getPod().get(0).getKey();
+			String pns2PodValue = pns2.getPod().get(0).getValue();
+			String pns1NamespaceKey = pns1.getNamespace().get(0).getKey();
+			String pns1NamespaceValue = pns1.getNamespace().get(0).getValue();
+			String pns2NamespaceKey = pns2.getNamespace().get(0).getKey();
+			String pns2NamespaceValue = pns2.getNamespace().get(0).getValue();
+
+			if((pns1PodKey.equals(pns2PodKey) || "*".equals(pns1PodKey) || "*".equals(pns2PodKey)) &&
+			   (pns1PodValue.equals(pns2PodValue) || "*".equals(pns1PodValue) || "*".equals(pns2PodValue)) &&
+			   (pns1NamespaceKey.equals(pns2NamespaceKey) || "*".equals(pns1NamespaceKey) || "*".equals(pns2NamespaceKey)) &&
+			   (pns1NamespaceValue.equals(pns2NamespaceValue) || "*".equals(pns1NamespaceValue) || "*".equals(pns2NamespaceValue))) {
+				return true;
+			}
+			else
+				return false;
+		} else {
+			return false;
+		}
+	}
+	
+	/*---------------------------------------------------------- */
+	/*---------------------------------------------------------- */
+	/*---------------------------------------------------------- */
+
+	/*----------------------------------------------------------------- */
+	/*---------------------HARMONIZATION UTILS--------------------------*/
+	/*----------------------------------------------------------------- */
+
 	/**
 	 * Function to compute the difference between two port ranges.
 	 * @param portRangeX is the first port range.
@@ -64,65 +192,39 @@ public class HarmonizationUtils {
 		return portRangeX;
 	}
 
-	/**
-	 * Function to compute the difference between two port ranges.
-	 * @param portRangeX is the first port range.
-	 * @param portRangeY is the second port range.
-	 * @return the resulting of first port range MINUS second port range (true (overlap) / false (no overlap))
-	 */
-	public static boolean computeVerifiedPortRange(String portRangeX, String portRangeY) {
-		portRangeX = portRangeX.equals("*") ? "0-65535" : portRangeX;
-		portRangeY = portRangeY.equals("*") ? "0-65535" : portRangeY;
 
-		String[] x = portRangeX.split("-");
-		String[] y = portRangeY.split("-");
-
-		int x0 = Integer.parseInt(x[0]);
-		int x1 = x.length == 2 ? Integer.parseInt(x[1]) : x0;
-
-		int y0 = Integer.parseInt(y[0]);
-		int y1 = y.length == 2 ? Integer.parseInt(y[1]) : y0;
-
-		/* Return true if portRangeX are overlapping with portRangeY */
-		return (x0 <= y1 && x1 >= y0);
-	}
 
 	/**
-	 * Function to compute the (set) difference between two Protocol types.
-	 * @param value is the first set of protocols.
-	 * @param value2 is the second set of protocols.
+	 * Function to compute the difference between two Protocol types.
+	 * @param protocol_1 is the first set of protocols.
+	 * @param protocol_2 is the second set of protocols.
 	 * @return the resulting of first set MINUS second set.
 	 */
-	public static String[] computeHarmonizedProtocolType(String value, String value2) {
-		if(value.equals(value2)) {
+	public static String[] computeHarmonizedProtocolType(String protocol_1, String protocol_2) {
+		if(protocol_1.equals(protocol_2)) {
 			// two identical sets.
 			return new String[] {};
-		} else if(value2.equals("ALL")) {
+		} else if(protocol_2.equals("ALL")) {
 			// inner set minus the whole domain.
 			return new String[] {};
-		} else if(value.equals("ALL")) {
+		} else if(protocol_1.equals("ALL")) {
 			// inner set is whole domain, return it minus the second set.
-			if(value2.equals("TCP")){
+			if(protocol_2.equals("TCP")){
 				return new String[]{"UDP", "SCTP"};
-			} else if(value2.equals("UDP")){
+			} else if(protocol_2.equals("UDP")){
 				return new String[]{"TCP","SCTP"};
-			} else if(value2.equals("SCTP")){
+			} else if(protocol_2.equals("SCTP")){
 				return new String[]{"TCP", "UDP"};
 			}
 		}
 		// If none of the previous, then they are two disjoint sets.
-		return new String[] {value};
+		return new String[] {protocol_1};
 	}
 
-	/**
-	 * Function to compute the (set) difference between two Protocol types.
-	 * @param value is the first set of protocols.
-	 * @param value2 is the second set of protocols.
-	 * @return true if value is overlapping with value2.
-	 */
-	public static boolean computeVerifyProtocolType(String value, String value2) {
-		return value.equals(value2) || value.equals("ALL") || value2.equals("ALL") || value.equals("*") || value2.equals("*");
-	}
+
+	/*----------------------------------------------------------------- */
+	/*------------------------------------------------------------------*/
+	/*----------------------------------------------------------------- */
 
 	/**
 	 * Function convert a KubernetesNetworkFilteringCondition into a string.
@@ -335,110 +437,8 @@ public class HarmonizationUtils {
 		return resSelectors;
 	}
 
-	/**
-	 * Function to compute the difference between two different resourceSelectors.
-	 * @param sel_1 is the first resourceSelector.
-	 * @param sel_2 is the second resourceSelector.
-	 * @return true if there is an overlap
-	 *
-	 */
-	public static boolean computeOverlapResourceSelector(ResourceSelector sel_1, ResourceSelector sel_2) {
-		Boolean isCIDR_1 = sel_1 instanceof CIDRSelector;
-		Boolean isCIDR_2 = sel_2 instanceof CIDRSelector;
-
-		if (isCIDR_1 && isCIDR_2) {
-			CIDRSelector cidr1 = (CIDRSelector) sel_1;
-			CIDRSelector cidr2 = (CIDRSelector) sel_2;
-			String resCIDRHarmonization = cidrDifference(cidr1.getAddressRange(), cidr2.getAddressRange());
-			return resCIDRHarmonization == null;
-		} else if (!isCIDR_1 && !isCIDR_2) {
-			PodNamespaceSelector pns1 = (PodNamespaceSelector) sel_1;
-			PodNamespaceSelector pns2 = (PodNamespaceSelector) sel_2;
-
-			if (pns1.isIsHostCluster() == pns2.isIsHostCluster()) {
-				return false;
-			}
-			String pns1PodKey = pns1.getPod().get(0).getKey();
-			String pns1PodValue = pns1.getPod().get(0).getValue();
-			String pns2PodKey = pns2.getPod().get(0).getKey();
-			String pns2PodValue = pns2.getPod().get(0).getValue();
-			String pns1NamespaceKey = pns1.getNamespace().get(0).getKey();
-			String pns1NamespaceValue = pns1.getNamespace().get(0).getValue();
-			String pns2NamespaceKey = pns2.getNamespace().get(0).getKey();
-			String pns2NamespaceValue = pns2.getNamespace().get(0).getValue();
-
-			if(areEqual(pns1NamespaceKey, pns1NamespaceValue, pns2NamespaceKey, pns2NamespaceValue)){
-				return areEqual(pns1PodKey, pns1PodValue, pns2PodKey, pns2PodValue);
-			}
-			else
-				return false;
-		} else {
-			return false;
-		}
-	}
-
-	public static boolean areEqual(String key1, String value1, String key2, String value2) {
-
-		boolean keysEqual = key1.equals(key2) || "*".equals(key1) || "*".equals(key2);
-
-		boolean valuesEqual = value1.equals(value2) || "*".equals(value1) || "*".equals(value2);
-
-		return keysEqual && valuesEqual;
-	}
-
-	public static boolean compareOverlapResourceSelector(ResourceSelector rs_1, ResourceSelector rs_2) {
-		boolean found;
-
-		if (rs_1 instanceof PodNamespaceSelector && rs_2 instanceof PodNamespaceSelector) {
-			PodNamespaceSelector pns_1 = (PodNamespaceSelector) rs_1;
-			PodNamespaceSelector pns_2 = (PodNamespaceSelector) rs_2;
 
 
-			if (pns_1.getNamespace().size() == 1 && pns_1.getNamespace().get(0).getKey().equals("*") && pns_1.getNamespace().get(0).getValue().equals("*") &&
-					pns_1.getPod().size() == 1 && pns_1.getPod().get(0).getKey().equals("*") && pns_1.getPod().get(0).getValue().equals("*")|| pns_2.getNamespace().size() == 1 && pns_2.getNamespace().get(0).getKey().equals("*") && pns_2.getNamespace().get(0).getValue().equals("*") &&
-					pns_2.getPod().size() == 1 && pns_2.getPod().get(0).getKey().equals("*") && pns_2.getPod().get(0).getValue().equals("*")) {
-				return true;
-			}
-
-			if (pns_1.getPod().size() != pns_2.getPod().size() || pns_1.getNamespace().size() != pns_2.getNamespace().size()) {
-				return false;
-			}
-
-			for (KeyValue kv_1 : pns_1.getPod()) {
-				found = false;
-				for (KeyValue kv_2 : pns_2.getPod()) {
-					if (kv_1.getKey().equals(kv_2.getKey()) && kv_1.getValue().equals(kv_2.getValue())) {
-						found = true;
-						break;
-					}
-				}
-				if (!found) {
-					return false;
-				}
-			}
-
-			for (KeyValue kv_1 : pns_1.getNamespace()) {
-				found = false;
-				for (KeyValue kv_2 : pns_2.getNamespace()) {
-					if (kv_1.getKey().equals(kv_2.getKey()) && kv_1.getValue().equals(kv_2.getValue())) {
-						found = true;
-						break;
-					}
-				}
-				if (!found) {
-					return false;
-				}
-			}
-
-			return true;
-		} else if (rs_1 instanceof CIDRSelector && rs_2 instanceof CIDRSelector) {
-			CIDRSelector cidr_1 = (CIDRSelector) rs_1;
-			CIDRSelector cidr_2 = (CIDRSelector) rs_2;
-			return cidr_1.getAddressRange().equals(cidr_2.getAddressRange());
-		} else {
-			return false;
-		}
-	}
 
 	public static boolean checkWildcard(ResourceSelector rs){
 		boolean isCIDR_1 = !rs.getClass().equals(PodNamespaceSelector.class);
@@ -741,4 +741,62 @@ public class HarmonizationUtils {
 
 		return cr_inverse;
 	}
+
+
+	/**
+	 * Function used to extract intents from a XML file.
+	 * @param file is the path of XML file to be parsed.
+	 */
+	public static ITResourceOrchestrationType extractIntentsFromXMLFile(String file) {
+
+		ITResourceOrchestrationType intent = null;
+		
+		try {
+			JAXBContext jc = JAXBContext.newInstance("eu.fluidos.jaxb");
+			Unmarshaller u = jc.createUnmarshaller();
+			SchemaFactory sf = SchemaFactory.newInstance(XMLConstants.W3C_XML_SCHEMA_NS_URI);
+			Schema sc = sf.newSchema(new File("/app/xsd/mspl.xsd"));
+			u.setSchema(sc);
+			Object unmsarshalObject = u.unmarshal(new FileInputStream(file));
+			intent = (ITResourceOrchestrationType) ((JAXBElement<?>) unmsarshalObject).getValue();
+		} catch (Exception e) {
+			System.out.println(e);
+			throw new RuntimeException("Error while unmarshalling the XML file: " + file);
+		}
+
+		return intent;
+	}
+
+	/**
+	 * Function used to extract the AuthorizationIntents from a given ITResourceOrchestrationType.
+	 * @param intent is the ITResourceOrchestrationType from which the intents are extracted.
+	 */
+	public static AuthorizationIntents extractAuthorizationIntents(ITResourceOrchestrationType intent) {
+		return intent.getITResource().stream()
+				.filter(it -> it.getConfiguration().getClass().equals(AuthorizationIntents.class))
+				.map(it -> (AuthorizationIntents) it.getConfiguration()).findFirst().orElse(null);
+	}
+
+
+	/**
+	 * Function used to extract the PrivateIntents from a given ITResourceOrchestrationType.
+	 * @param intent is the ITResourceOrchestrationType from which the intents are extracted.
+	 */
+	public static PrivateIntents extractPrivateIntents(ITResourceOrchestrationType intent) {
+		return intent.getITResource().stream()
+				.filter(it -> it.getConfiguration().getClass().equals(PrivateIntents.class))
+				.map(it -> (PrivateIntents) it.getConfiguration()).findFirst().orElse(null);
+	}
+
+
+	/**
+	 * Function used to extract the RequestIntents from a given ITResourceOrchestrationType.
+	 * @param intent is the ITResourceOrchestrationType from which the intents are extracted.
+	 */
+	public static RequestIntents extractRequestIntents(ITResourceOrchestrationType intent) {
+		return intent.getITResource().stream()
+				.filter(it -> it.getConfiguration().getClass().equals(RequestIntents.class))
+				.map(it -> (RequestIntents) it.getConfiguration()).findFirst().orElse(null);
+	}
+
 }

@@ -21,41 +21,30 @@ import io.kubernetes.client.openapi.models.V1NetworkPolicySpec;
 import io.kubernetes.client.openapi.models.V1ObjectMeta;
 import io.kubernetes.client.openapi.models.V1Pod;
 import io.kubernetes.client.openapi.models.V1PodList;
-import io.kubernetes.client.util.ClientBuilder;
 import io.kubernetes.client.util.Config;
 import io.kubernetes.client.util.Watch;
 import io.kubernetes.client.util.Yaml;
-import io.kubernetes.client.util.credentials.AccessTokenAuthentication;
-import io.kubernetes.client.util.wait.Wait;
-import okhttp3.Request;
 
 import java.io.File;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.rmi.server.ExportException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import eu.fluidos.Module;
 import eu.fluidos.jaxb.AuthorizationIntents;
 import eu.fluidos.jaxb.CIDRSelector;
-import eu.fluidos.jaxb.ConfigurationCondition;
 import eu.fluidos.jaxb.ConfigurationRule;
-import eu.fluidos.jaxb.ExternalData;
-import eu.fluidos.jaxb.HSPL;
 import eu.fluidos.jaxb.ITResourceOrchestrationType;
 import eu.fluidos.jaxb.KeyValue;
 import eu.fluidos.jaxb.KubernetesNetworkFilteringAction;
@@ -65,42 +54,25 @@ import eu.fluidos.jaxb.Priority;
 import eu.fluidos.jaxb.ProtocolType;
 import eu.fluidos.jaxb.RequestIntents;
 import eu.fluidos.jaxb.ResourceSelector;
-import eu.fluidos.traslator.Ruleinfo;
 
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import org.apache.logging.log4j.core.tools.picocli.CommandLine.ExecutionException;
-import org.jose4j.json.internal.json_simple.JSONArray;
-import org.jose4j.json.internal.json_simple.JSONObject;
-import org.jose4j.json.internal.json_simple.parser.JSONParser;
 
 import eu.fluidos.Crds.TunnelEndpoint;
 import eu.fluidos.harmonization.HarmonizationController;
-import eu.fluidos.harmonization.HarmonizationService;
 import eu.fluidos.Namespace;
 import eu.fluidos.Pod;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.reflect.TypeToken;
-import com.google.gson.stream.JsonReader;
-import com.google.protobuf.BoolValue;
-import com.google.gson.Gson;
-import com.google.gson.JsonArray;
 import com.google.gson.JsonParser;
-import com.google.gson.JsonSyntaxException;
-
-import ch.qos.logback.classic.joran.action.ConfigurationAction;
-import ch.qos.logback.core.Context;
-import eu.fluidos.harmonization.*;;
 
 public class KubernetesController {
-    private final ITResourceOrchestrationType intents;
     private static final Logger LOGGER = Logger.getLogger(KubernetesController.class.getName());
     private List<String> offloadedNamespace;
     private Map<String, List<String>> allowedIpList;
@@ -126,8 +98,7 @@ public class KubernetesController {
             "calico-apiserver",
             "liqo"));
 
-    public KubernetesController(ITResourceOrchestrationType intents) {
-        this.intents = intents;
+    public KubernetesController() {
         try {
             String token = new String(
                     Files.readAllBytes(Paths.get("/var/run/secrets/kubernetes.io/serviceaccount/token"))); // Path per
@@ -472,8 +443,7 @@ public class KubernetesController {
                         ? (String) flavorSpec.get("networkPropertyType")
                         : null;
 
-                String networkRequests = spec.containsKey("networkRequests") ? (String) spec.get("networkRequests")
-                        : null;
+                String networkRequests = spec.containsKey("networkRequests") ? (String) spec.get("networkRequests") : null;
                 String buyerClusterID = spec.containsKey("buyerClusterID") ? (String) spec.get("buyerClusterID") : null;
 
                 if (networkRequests != null) {
