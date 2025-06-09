@@ -24,12 +24,12 @@ public class VerifyTest {
     // ===================== XML FILE-BASED TEST SCENARIOS =====================
     
     @Test
-    public void testScenario1_compatible_authorizations() {
+    public void testScenario1_incompatible_authorizations1() {
         AuthorizationIntents authorizationIntents;
         RequestIntents requestIntents;
         try {
-            ITResourceOrchestrationType consumerIntents = HarmonizationUtils.extractIntentsFromXMLFile("./testfile/consumer_MSPL_demo.xml");
-            ITResourceOrchestrationType providerIntents = HarmonizationUtils.extractIntentsFromXMLFile("./testfile/provider_MSPL_demo.xml");
+            ITResourceOrchestrationType consumerIntents = HarmonizationUtils.extractIntentsFromXMLFile("./testfile/consumer_MSPL_test_scenario1.xml");
+            ITResourceOrchestrationType providerIntents = HarmonizationUtils.extractIntentsFromXMLFile("./testfile/provider_MSPL_test_scenario1.xml");
             
             authorizationIntents = HarmonizationUtils.extractAuthorizationIntents(providerIntents);
             requestIntents = HarmonizationUtils.extractRequestIntents(consumerIntents);
@@ -38,7 +38,7 @@ public class VerifyTest {
             boolean result = harmonizationData.verify(requestIntents, authorizationIntents,
                                                     consumerPodMap, providerPodMap);
             
-            assertTrue("Scenario 1: Request intents should be approved", result);
+            assertFalse("Flavor 1: Request intents should be incompatible with first flavor", result);
             
         } catch (Exception e) {
             fail("Failed to load XML files for Scenario 1: " + e.getMessage());
@@ -46,12 +46,12 @@ public class VerifyTest {
     }
     
     @Test
-    public void testScenario2_incompatible_mandatory() {
+    public void testScenario2_incompatible_authorizations2() {
         AuthorizationIntents authorizationIntents;
         RequestIntents requestIntents;
         try {
-            ITResourceOrchestrationType consumerIntents = HarmonizationUtils.extractIntentsFromXMLFile("./testfile/consumer_MSPL_demo.xml");
-            ITResourceOrchestrationType providerIntents = HarmonizationUtils.extractIntentsFromXMLFile("./testfile/provider_MSPL_demo.xml");
+            ITResourceOrchestrationType consumerIntents = HarmonizationUtils.extractIntentsFromXMLFile("./testfile/consumer_MSPL_test_scenario1.xml");
+            ITResourceOrchestrationType providerIntents = HarmonizationUtils.extractIntentsFromXMLFile("./testfile/provider_MSPL_test_scenario2.xml");
             
             authorizationIntents = HarmonizationUtils.extractAuthorizationIntents(providerIntents);
             requestIntents = HarmonizationUtils.extractRequestIntents(consumerIntents);
@@ -60,7 +60,7 @@ public class VerifyTest {
             boolean result = harmonizationData.verify(requestIntents, authorizationIntents,
                                                     consumerPodMap, providerPodMap);
             
-            assertFalse("Scenario 2: Monitoring access not allowed", result);
+            assertFalse("Flavor 2: Request intents should be incompatible with second flavor", result);
             
         } catch (Exception e) {
             fail("Failed to load XML files for Scenario 2: " + e.getMessage());
@@ -68,12 +68,12 @@ public class VerifyTest {
     }
     
     @Test
-    public void testScenario3_incompatible_authorization() {
+    public void testScenario3_compatible_authorization() {
         AuthorizationIntents authorizationIntents;
         RequestIntents requestIntents;
         try {
-            ITResourceOrchestrationType consumerIntents = HarmonizationUtils.extractIntentsFromXMLFile("./testfile/consumer_MSPL_demo.xml");
-            ITResourceOrchestrationType providerIntents = HarmonizationUtils.extractIntentsFromXMLFile("./testfile/provider_MSPL_demo.xml");
+            ITResourceOrchestrationType consumerIntents = HarmonizationUtils.extractIntentsFromXMLFile("./testfile/consumer_MSPL_test_scenario1.xml");
+            ITResourceOrchestrationType providerIntents = HarmonizationUtils.extractIntentsFromXMLFile("./testfile/provider_MSPL_test_scenario3.xml");
             
             authorizationIntents = HarmonizationUtils.extractAuthorizationIntents(providerIntents);
             requestIntents = HarmonizationUtils.extractRequestIntents(consumerIntents);
@@ -82,7 +82,29 @@ public class VerifyTest {
             boolean result = harmonizationData.verify(requestIntents, authorizationIntents,
                                                     consumerPodMap, providerPodMap);
             
-            assertFalse("Scenario 3: Incompatible Authorizaiton intents", result);
+            assertTrue("Flavor 3: This is the compatible flavor and should be selected in verification", result);
+            
+        } catch (Exception e) {
+            fail("Failed to load XML files for Scenario 3: " + e.getMessage());
+        }
+    }
+
+     @Test
+    public void testScenario4_incompatible_authorization() {
+        AuthorizationIntents authorizationIntents;
+        RequestIntents requestIntents;
+        try {
+            ITResourceOrchestrationType consumerIntents = HarmonizationUtils.extractIntentsFromXMLFile("./testfile/consumer_MSPL_test_scenario1.xml");
+            ITResourceOrchestrationType providerIntents = HarmonizationUtils.extractIntentsFromXMLFile("./testfile/provider_MSPL_test_scenario4.xml");
+            
+            authorizationIntents = HarmonizationUtils.extractAuthorizationIntents(providerIntents);
+            requestIntents = HarmonizationUtils.extractRequestIntents(consumerIntents);
+
+            // Initialize consumer and provider pod maps
+            boolean result = harmonizationData.verify(requestIntents, authorizationIntents,
+                                                    consumerPodMap, providerPodMap);
+            
+            assertTrue("Flavor 3: This is the compatible flavor and should be selected in verification", result);
             
         } catch (Exception e) {
             fail("Failed to load XML files for Scenario 3: " + e.getMessage());

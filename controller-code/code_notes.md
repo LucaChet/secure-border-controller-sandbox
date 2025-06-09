@@ -55,7 +55,7 @@ Si potrebbe quasi rinominare per coerenza con il nome del progetto, essendo il c
 >    - Usare un file di configurazione esterno
 >    - Usare una variabile d'ambiente
 >    - altro..?
-8. ❌ testare la funzione `verify` così da avere prova che funzioni, scoprire perchè passa il check sul primo peeringcandidate
+8. ✅ testare la funzione `verify` così da avere prova che funzioni, scoprire perchè passa il check sul primo peeringcandidate
 9. la funzione `createProviderCluster` *non ha senso* 
 10. per testare il controllore come componente di un cluster KinD: 
     - compilare il codice sorgente
