@@ -66,13 +66,13 @@ public class VerifyTest {
     ConfigurationRule rule1  = new ConfigurationRule();
    
     rSelector1.setIsHostCluster(false);
-    rSelector1.
-    action1.setKubernetesNetworkFilteringActionType("ALLOW");
-    cond1.setIsCNF(false);
-    cond1.setProtocolType(ProtocolType.TCP);
-    cond1.setSource(null);
-    rule1.setConfigurationCondition(cond1);
-    rule1.setConfigurationRuleAction(action1);
+    //rSelector1.
+    //action1.setKubernetesNetworkFilteringActionType("ALLOW");
+    //cond1.setIsCNF(false);
+    //cond1.setProtocolType(ProtocolType.TCP);
+    //cond1.setSource(null);
+    //rule1.setConfigurationCondition(cond1);
+    //rule1.setConfigurationRuleAction(action1);
     
 
     }

@@ -755,7 +755,8 @@ public class HarmonizationUtils {
 			JAXBContext jc = JAXBContext.newInstance("eu.fluidos.jaxb");
 			Unmarshaller u = jc.createUnmarshaller();
 			SchemaFactory sf = SchemaFactory.newInstance(XMLConstants.W3C_XML_SCHEMA_NS_URI);
-			Schema sc = sf.newSchema(new File("/app/xsd/mspl.xsd"));
+			//TODO: change the path to the XSD file once containerized
+			Schema sc = sf.newSchema(new File("./xsd/mspl.xsd"));//(new File("/app/xsd/mspl.xsd"));
 			u.setSchema(sc);
 			Object unmsarshalObject = u.unmarshal(new FileInputStream(file));
 			intent = (ITResourceOrchestrationType) ((JAXBElement<?>) unmsarshalObject).getValue();
