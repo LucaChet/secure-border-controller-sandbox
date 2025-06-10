@@ -65,7 +65,6 @@ public class HarmonizationUtils {
 	 * @return true if sel_1 is overlapping with sel_2, false otherwise.
 	 *
 	 */
-	//TODO: check if this formulation could be improved and if it is correct.
 	public static boolean verifyResourceSelector(ResourceSelector sel_1, ResourceSelector sel_2) {
 		Boolean isCIDR_1 = false, isCIDR_2 = false;
 		if(sel_1.getClass().equals(PodNamespaceSelector.class)){
