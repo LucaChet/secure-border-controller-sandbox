@@ -65,7 +65,8 @@ Si potrebbe quasi rinominare per coerenza con il nome del progetto, essendo il c
 ## TODO: sync 2
 1. PER LA DEMO! la `verify` dovrebbe restituire un ranking dei candidati al peering anzichè semplicemente escludere o accettare (true/false) i singoli candidati. In questo modo l'armonizzazione verrebbe sfruttata appieno nel suo algoritmo complesso, visto che al momento uno dei due lati degli intenti (richiesta o autorizzazione) sono una wildcard `*` che rende banale l'armonizzazione.
 2. `verify` non deve avere il cluster tra gli argomenti, ma soltanto i `requestIntent` e gli `authorizationIntent`
-3. rimuovere le mappe dalla verify, visto che tanto non viene effettuato il check a basso livello sui pods ma soltanto ad alto livello sulle label
-4. creare un watcher su una configMap (quella di UMU)
-4b. trovare un modo per aspettare che delle risorse siano pronte: quando ho ricevuto i PeeringCandidates devo aspettare la ConfigMap di UMU per poi accedervi una volta che esiste ed è popolata
-5. DEMO: lanciare un test con n provider e un solo consumer 
+3. ✅ rimuovere le mappe dalla verify, visto che tanto non viene effettuato il check a basso livello sui pods ma soltanto ad alto livello sulle label
+4.  creare un watcher su una configMap (quella di UMU)
+5. ✅ trovare un modo per aspettare che delle risorse siano pronte: quando ho ricevuto i PeeringCandidates devo aspettare la ConfigMap di UMU per poi accedervi una volta che esiste ed è popolata
+>   ⚠️ busy waiting con while loop
+6. DEMO: lanciare un test con n provider e un solo consumer 

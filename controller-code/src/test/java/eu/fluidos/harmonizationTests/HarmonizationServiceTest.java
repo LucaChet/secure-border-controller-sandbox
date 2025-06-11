@@ -27,12 +27,11 @@ public class HarmonizationServiceTest {
     public void testCompatibleIntents() {
         // Consumer and provider allow the same connection
         try{
-            RequestIntents consumer = TestDataUtils.loadRequestIntentsFromXml("consumer_MSPL_test_scenario1.xml");
-            AuthorizationIntents provider = TestDataUtils.loadAuthorizationIntentsFromXml("provider_MSPL_test_scenario3.xml");
+            RequestIntents consumer = TestDataUtils.loadRequestIntentsFromXml("./testfile/consumer_MSPL_test_scenario1.xml");
+            AuthorizationIntents provider = TestDataUtils.loadAuthorizationIntentsFromXml("./testfile/provider_MSPL_test_scenario3.xml");
             RequestIntents harmonized = harmonizationService.harmonize(dummyCluster, consumer, provider);
             assertNotNull(harmonized);
             assertTrue(harmonized.getConfigurationRule().size() > 0);
-            assertTrue(harmonizationService.verify(dummyCluster, provider));
         } catch (Exception e) {
             fail("Failed to load XML files for testCompatibleIntents: " + e.getMessage());
         }

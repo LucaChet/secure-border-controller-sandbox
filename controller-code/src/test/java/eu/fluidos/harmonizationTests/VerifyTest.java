@@ -35,8 +35,7 @@ public class VerifyTest {
             requestIntents = HarmonizationUtils.extractRequestIntents(consumerIntents);
 
             // Initialize consumer and provider pod maps
-            boolean result = harmonizationData.verify(requestIntents, authorizationIntents,
-                                                    consumerPodMap, providerPodMap);
+            boolean result = harmonizationData.verify(requestIntents, authorizationIntents);
             
             assertFalse("Flavor 1: Request intents should be incompatible with first flavor", result);
             
@@ -57,8 +56,7 @@ public class VerifyTest {
             requestIntents = HarmonizationUtils.extractRequestIntents(consumerIntents);
 
             // Initialize consumer and provider pod maps
-            boolean result = harmonizationData.verify(requestIntents, authorizationIntents,
-                                                    consumerPodMap, providerPodMap);
+            boolean result = harmonizationData.verify(requestIntents, authorizationIntents);
             
             assertFalse("Flavor 2: Request intents should be incompatible with second flavor", result);
             
@@ -79,8 +77,7 @@ public class VerifyTest {
             requestIntents = HarmonizationUtils.extractRequestIntents(consumerIntents);
 
             // Initialize consumer and provider pod maps
-            boolean result = harmonizationData.verify(requestIntents, authorizationIntents,
-                                                    consumerPodMap, providerPodMap);
+            boolean result = harmonizationData.verify(requestIntents, authorizationIntents);
             
             assertTrue("Flavor 3: This is the compatible flavor and should be selected in verification", result);
             
@@ -101,8 +98,7 @@ public class VerifyTest {
             requestIntents = HarmonizationUtils.extractRequestIntents(consumerIntents);
 
             // Initialize consumer and provider pod maps
-            boolean result = harmonizationData.verify(requestIntents, authorizationIntents,
-                                                    consumerPodMap, providerPodMap);
+            boolean result = harmonizationData.verify(requestIntents, authorizationIntents);
             
             assertTrue("Flavor 3: This is the compatible flavor and should be selected in verification", result);
             

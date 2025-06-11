@@ -685,7 +685,6 @@ public class KubernetesController {
             AtomicBoolean firstTimeToCallVerifier = new AtomicBoolean(false);
             AtomicBoolean timerStarted = new AtomicBoolean(false);
             List<JsonObject> listTypeData = new ArrayList<>();
-            String flavorName = new String();
             String peeringCandidateName = new String();
             List<AuthorizationIntents> listReturnedAuthorizationIntents = new ArrayList<>();
             List<String> listPeeringCandidateName = new ArrayList<>();
@@ -695,8 +694,6 @@ public class KubernetesController {
                     peeringCandidateName = peeringCandidate.getAsJsonObject("metadata").get("name").getAsString();
                     JsonObject spec = peeringCandidate.getAsJsonObject("spec");
                     JsonObject flavor = spec.getAsJsonObject("flavor");
-                    JsonObject metadata = flavor.getAsJsonObject("metadata");
-                    flavorName = metadata.get("name").getAsString();
                     System.out.println("Peering Candidate: " + peeringCandidateName);
                     JsonObject spec1 = flavor.getAsJsonObject("spec");
                     JsonObject flavorType = spec1.getAsJsonObject("flavorType");
@@ -799,22 +796,34 @@ public class KubernetesController {
         return null;
     }
 
-    private void callVerifier(List<AuthorizationIntents> listReturnedAuthorizationIntents, List<String> names) {
+    private void callVerifier(List<AuthorizationIntents> authIntentsFromFlavors, List<String> PeeringCandidateNames) {
         int i = 0;
-        for (AuthorizationIntents authorizationIntents : listReturnedAuthorizationIntents) {
+        for (AuthorizationIntents authorizationIntents : authIntentsFromFlavors) {
             if (authorizationIntents != null && authorizationIntents.getForbiddenConnectionList().size() > 0
                     && authorizationIntents.getMandatoryConnectionList().size() > 0) {
                 HarmonizationController harmonizationController = new HarmonizationController();
-                System.out.println("[+] Processing PeeringCandidate: " + names.get(i));
-                Boolean value = harmonizationController.verify(createCluster(client, "consumer"), authorizationIntents);
-                if (value) {
-                    System.out.println("[+] Result for PeeringCandidate " + names.get(i) + " from Verifier is: "
-                            + Main.ANSI_GREEN + value + Main.ANSI_RESET);
-                    return;
+                System.out.println("[+] Processing PeeringCandidate: " + PeeringCandidateNames.get(i));
+                //TODO: extract request intents from standard ConfigMap (created by UMU's meta orchestrator) and pass it to verify directly
+                //Boolean value = harmonizationController.verify(createCluster(client, "consumer"), authorizationIntents); -> LEGACY CALL
+                RequestIntents requestIntents;
+                try {
+                    while ((requestIntents = accessConfigMap(client, null, null)) == null){ //Name and Namespace of ConfigMap to be defined
+                        Thread.sleep(1);
+                    }
+                
+                    Boolean value = harmonizationController.verify(requestIntents, authorizationIntents);
+                    if (value) {
+                        System.out.println("[+] Result for PeeringCandidate " + PeeringCandidateNames.get(i) + " from Verifier is: "
+                                + Main.ANSI_GREEN + value + Main.ANSI_RESET);
+                        return;
+                    }
+                    System.out.println("[+] Result for PeeringCandidate " + PeeringCandidateNames.get(i) + " from Verifier is: "
+                            + Main.ANSI_RED + value + Main.ANSI_RESET);
+                    System.out.println(" ");
+                } catch (Exception e) {
+                    System.out.println("Exception occured while waiting for configMap containing consumer's Request Intents (UMU) to become available");
+                    e.printStackTrace();
                 }
-                System.out.println("[+] Result for PeeringCandidate " + names.get(i) + " from Verifier is: "
-                        + Main.ANSI_RED + value + Main.ANSI_RESET);
-                System.out.println(" ");
             }
             i++;
         }
@@ -913,7 +922,7 @@ public class KubernetesController {
         return selector;
     }
 
-    void StampaAuthIntents(AuthorizationIntents authorizationIntents) {
+    void PrintAuthIntents(AuthorizationIntents authorizationIntents) {
         System.out.println(" ");
         if (authorizationIntents != null) {
             System.out.println("Mandatory communications: ");

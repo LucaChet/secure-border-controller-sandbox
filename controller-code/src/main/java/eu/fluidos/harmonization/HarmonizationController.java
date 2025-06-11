@@ -15,8 +15,13 @@ public class HarmonizationController {
 		return harmonizationService.harmonize(cluster, requestIntents,contracAuthorizationIntents);
 	}
 
-	public boolean verify(Cluster cluster, AuthorizationIntents authIntentsProvider) {
+	/* LEGACY METHOD
+	 * public boolean verify(Cluster cluster, AuthorizationIntents authIntentsProvider) {
 		return harmonizationService.verify(cluster, authIntentsProvider);
+	}
+	 */
+	public boolean verify(RequestIntents reqIntentsConsumer, AuthorizationIntents authIntentsProvider) {
+		return harmonizationService.verify(reqIntentsConsumer, authIntentsProvider);
 	}
 
 }

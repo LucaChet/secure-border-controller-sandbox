@@ -11,8 +11,8 @@ public class HarmonizationData {
 
 	private static final Logger loggerInfo = LogManager.getLogger("harmonization");
 
-	/**
-	 * This method verifies if the requested intents of the consumer are compatible
+	/** LEGACY METHOD
+	 * This LEGACY method verifies if the requested intents of the consumer are compatible
 	 * with the authorization intents of the provider.
 	 * It checks for overlaps between the requested configuration rules and the
 	 * forbidden connection list.
@@ -22,8 +22,9 @@ public class HarmonizationData {
 	 * @param podsByNamespaceAndLabelsConsumer The map of pods by namespace and labels for the consumer.
 	 * @param podsByNamespaceAndLabelsProvider The map of pods by namespace and labels for the provider.
 	 * @return true if request and authorization intents are compatible, false otherwise.
-	 */
-	public boolean verify(RequestIntents requestIntent,
+	 
+	
+	 public boolean verify(RequestIntents requestIntent,
 			AuthorizationIntents authIntent,
 			HashMap<String, HashMap<String, List<Pod>>> podsByNamespaceAndLabelsConsumer,
 			HashMap<String, HashMap<String, List<Pod>>> podsByNamespaceAndLabelsProvider) {
@@ -37,6 +38,29 @@ public class HarmonizationData {
 		}
 		return true;
 	}
+	*/
+
+
+	/**
+	 * This method verifies if the requested intents of the consumer are compatible
+	 * with the authorization intents of the provider.
+	 * It checks for overlaps between the requested configuration rules and the
+	 * forbidden connection list.
+	 *
+	 * @param requestIntent                  The requested intents from the consumer.
+	 * @param authIntent                     The authorization intents from the provider.
+	 * @return true if request and authorization intents are compatible, false otherwise.
+	 */
+
+	 public boolean verify(RequestIntents requestIntent, AuthorizationIntents authIntent) {
+		System.out.println("[VERIFY] Process started...");
+		for (ConfigurationRule cr : requestIntent.getConfigurationRule()) {
+			if (!verifyConfigurationRule(cr, authIntent.getForbiddenConnectionList())) {
+				return false;
+			}
+		}
+		return true;
+	}
 
 	/**
 	 * This method verifies if a single configuration rule overlaps with any of the
@@ -44,19 +68,16 @@ public class HarmonizationData {
 	 * It checks for overlaps in protocol type, port ranges, source, and destination
 	 * selectors.
 	 *
-	 * @param cr          The configuration rule to verify.
+	 * @param configRule          The configuration rule to verify.
 	 * @param connList    The list of connection rules to check against.
 	 * @param map_conn    The map of pods by namespace and labels for the consumer.
 	 * @param map_connList The map of pods by namespace and labels for the provider.
 	 * @return true if there is no overlap, false otherwise.
 	 */
-	private boolean verifyConfigurationRule(ConfigurationRule cr, List<ConfigurationRule> connList,
-			HashMap<String, HashMap<String, List<Pod>>> map_conn,
-			HashMap<String, HashMap<String, List<Pod>>> map_connList) {
+	private boolean verifyConfigurationRule(ConfigurationRule configRule, List<ConfigurationRule> connList) {
 				
-		ConfigurationRule res = HarmonizationUtils.deepCopyConfigurationRule(cr);
-		KubernetesNetworkFilteringCondition resCond = (KubernetesNetworkFilteringCondition) res
-				.getConfigurationCondition();
+		ConfigurationRule res = HarmonizationUtils.deepCopyConfigurationRule(configRule);
+		KubernetesNetworkFilteringCondition resCond = (KubernetesNetworkFilteringCondition) res.getConfigurationCondition();
 		for (ConfigurationRule confRule : connList) {
 			boolean overlap;
 			boolean overlapDstPort;

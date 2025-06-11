@@ -52,6 +52,7 @@ public class HarmonizationService{
         return requestIntent;
     }
 
+	/* LEGACY METHOD
 	public boolean verify(Cluster cluster, AuthorizationIntents authIntents) {
 		AuthorizationIntents authIntentsProvider;
 		RequestIntents requestIntentsConsumer;
@@ -90,5 +91,33 @@ public class HarmonizationService{
 			System.out.println("RequestIntents is null");
 			return false;
 		}
+	}
+	*/
+
+	public boolean verify(RequestIntents reqIntents, AuthorizationIntents authIntents) {
+		boolean verifyResult;
+		
+		//TODO: remove hardcoded MSPL files
+		
+		if(authIntents==null) {
+			System.out.println("authorization intents is null");
+			return false;
+		}
+
+		if(reqIntents==null) {
+			System.out.println("request intents is null");
+			return false;
+		}
+
+		System.out.println("[+] Checking authorization intents:");
+		harmonizationData.printAuthorizationIntents(authIntents); //Needed?
+		
+		if (authIntents.getMandatoryConnectionList().size()>1 && !reqIntents.isAcceptMonitoring()) {
+			return false;
+		}
+		else
+			verifyResult = harmonizationData.verify(reqIntents, authIntents);
+
+		return verifyResult;
 	}
 }
