@@ -41,7 +41,7 @@ Converts harmonized intents into valid Kubernetes Network Policy resources and t
 
 ***(9)*** The Contract is used to configure peering leveraging Liqo.
 
-***(10)*** The consumer’s Request intents are stored in a config map which is kept synchronized with the provider, and its name is writtend on the Contract.
+***(10)*** The consumer’s request intents are stored in a config map which is kept synchronized with the provider, and its name is written in the Contract.
 
 ***(11)*** Once offloading begins, the Secure Border Controller enforces initial isolation rules and harmonizes intents between consumer and provider.
 
