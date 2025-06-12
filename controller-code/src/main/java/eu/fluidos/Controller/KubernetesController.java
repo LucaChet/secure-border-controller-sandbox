@@ -706,13 +706,16 @@ public class KubernetesController {
 
                     if (timerStarted.compareAndSet(false, true)) {
                         scheduler.schedule(() -> {
-                            firstTimeToCallVerifier.set(true);
+                            timerStarted.set(false);
+                            //firstTimeToCallVerifier.set(true);
                             if (!listReturnedAuthorizationIntents.isEmpty()) {
                                 System.out.println("Start the verifier");
                                 callVerifier(listReturnedAuthorizationIntents, listPeeringCandidateName);
                             }
                         }, 5, TimeUnit.SECONDS);
                     }
+
+                    /*
                     listTypeData.add(typeData);
                     if (firstTimeToCallVerifier.get()) {
                         if (!listReturnedAuthorizationIntents.isEmpty()) {
@@ -720,6 +723,7 @@ public class KubernetesController {
                             callVerifier(listReturnedAuthorizationIntents, listPeeringCandidateName);
                         }
                     }
+                         */
                 }
             }
         } catch (ApiException e) {
@@ -807,7 +811,7 @@ public class KubernetesController {
                 //Boolean value = harmonizationController.verify(createCluster(client, "consumer"), authorizationIntents); -> LEGACY CALL
                 RequestIntents requestIntents;
                 try {
-                    while ((requestIntents = accessConfigMap(client, null, null)) == null){ //Name and Namespace of ConfigMap to be defined
+                    while ((requestIntents = accessConfigMap(client, "fluidos", "consumer-network-intent")) == null){ //Name and Namespace of ConfigMap to be defined
                         Thread.sleep(1);
                     }
                 

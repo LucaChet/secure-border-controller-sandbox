@@ -68,5 +68,8 @@ Si potrebbe quasi rinominare per coerenza con il nome del progetto, essendo il c
 3. ✅ rimuovere le mappe dalla verify, visto che tanto non viene effettuato il check a basso livello sui pods ma soltanto ad alto livello sulle label
 4.  creare un watcher su una configMap (quella di UMU)
 5. ✅ trovare un modo per aspettare che delle risorse siano pronte: quando ho ricevuto i PeeringCandidates devo aspettare la ConfigMap di UMU per poi accedervi una volta che esiste ed è popolata
->   ⚠️ busy waiting con while loop: da testare
+>   ⚠️ busy waiting con while loop: da testare -> TEST OK ✅
 6. DEMO: lanciare un test con n provider e un solo consumer 
+
+⚠️ modificata logica `callVerifier` rimuovendo il check atomico che sia possibile chiamare una sola volta la funzione verify all'arrivo dei PeeringCandidates!! 
+⚠️ monitorare PR fluidos node per fixare l'errore sui peeringCandidates che arrivano vuoti

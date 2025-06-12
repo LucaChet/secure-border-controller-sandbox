@@ -9,7 +9,6 @@ eu/fluidos/jaxb/IoTRouterType.class
 eu/fluidos/jaxb/NetworkSlicingCondition.class
 eu/fluidos/jaxb/ICRA.class
 eu/fluidos/jaxb/ActionParameters.class
-META-INF/JAXB/episode_default_5.xjb
 eu/fluidos/Crds/TunnelEndpoint$Status.class
 eu/fluidos/Module.class
 eu/fluidos/jaxb/Parameters.class
@@ -39,7 +38,6 @@ eu/fluidos/jaxb/SoftwareType.class
 eu/fluidos/jaxb/AnonymityAction.class
 eu/fluidos/jaxb/LevelType.class
 eu/fluidos/jaxb/StatefulCondition.class
-META-INF/JAXB/episode_default_1.xjb
 eu/fluidos/jaxb/DBDataSelectionCondition.class
 eu/fluidos/jaxb/OperatingSystemType.class
 eu/fluidos/jaxb/AuthcDecisionCapability.class
@@ -78,7 +76,6 @@ eu/fluidos/jaxb/ChannelAuthorizationCapability.class
 eu/fluidos/jaxb/TimeUnit.class
 eu/fluidos/jaxb/RemoveTrackingTechniquesActionType.class
 eu/fluidos/jaxb/BotnetDetectorCapability.class
-META-INF/JAXB/episode_default-cli.xjb
 eu/fluidos/jaxb/AdditionalNetworkConfigurationParameters.class
 eu/fluidos/jaxb/SignatureList.class
 eu/fluidos/jaxb/Count.class
@@ -123,7 +120,6 @@ eu/fluidos/jaxb/AuthenticationCondition.class
 eu/fluidos/jaxb/MSPLLink.class
 eu/fluidos/jaxb/NetType.class
 eu/fluidos/jaxb/MonitoringAction.class
-META-INF/JAXB/episode_default_4.xjb
 eu/fluidos/jaxb/FederatedLearningRuleAction.class
 eu/fluidos/jaxb/TLSSSLTechnologyParameter.class
 eu/fluidos/jaxb/PrivacyABMethod.class
@@ -200,7 +196,6 @@ eu/fluidos/jaxb/NetworkSlicingAction.class
 eu/fluidos/jaxb/ConfigurationAction.class
 eu/fluidos/jaxb/DataSelectionCondition.class
 eu/fluidos/jaxb/AuthorizationActionType.class
-META-INF/JAXB/episode_default_3.xjb
 eu/fluidos/jaxb/KubernetesNetworkFilteringCondition.class
 eu/fluidos/jaxb/RemoveActionType.class
 eu/fluidos/jaxb/AuthzDecisionCapabiliy.class
@@ -214,7 +209,6 @@ eu/fluidos/jaxb/IntegrationFabricParameters.class
 eu/fluidos/jaxb/FLConfigurationCondition.class
 eu/fluidos/jaxb/ReencryptNetworkConfiguration.class
 eu/fluidos/jaxb/PacketFilterCondition.class
-META-INF/JAXB/episode_default.xjb
 eu/fluidos/jaxb/EventDependency.class
 eu/fluidos/jaxb/PurposeConditionType.class
 eu/fluidos/jaxb/RuleSetConfiguration.class
@@ -257,5 +251,4 @@ eu/fluidos/jaxb/TrafficDivertConfigurationCondition.class
 eu/fluidos/jaxb/ForwardProxyCapabiity.class
 eu/fluidos/jaxb/CheckActionType.class
 eu/fluidos/jaxb/InteractionLevel.class
-META-INF/JAXB/episode_default_2.xjb
 eu/fluidos/jaxb/TimeCondition.class
