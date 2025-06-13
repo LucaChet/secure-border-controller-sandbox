@@ -83,8 +83,42 @@ public class KubernetesController {
     private V1NamespaceList providerNamespaceList;
     private V1NamespaceList consumerNamespaceList;
     private boolean firstCallToModuletimer = true;
+    private static class SyncPatchedContract {
+        public final AtomicBoolean contractAvailable = new AtomicBoolean(false);
+        public final AtomicBoolean offloadedNamespaceAvailable = new AtomicBoolean(false);
+        public String configMapName = "";
+
+        public SyncPatchedContract() {}
+
+        public void setContractAvailable(boolean value, String configMapName) {
+            this.contractAvailable.set(value);
+            if (configMapName != null && !configMapName.isEmpty()) {
+                this.configMapName = configMapName;
+            }
+        }
+
+        public void setOffloadedNamespaceAvailable(boolean value) {
+            this.contractAvailable.set(value);
+        }
+
+        public boolean compareSetOffloadedNamespaceAvailable(boolean expected, boolean desired) {
+            return this.contractAvailable.compareAndSet(expected, desired);
+        }
+
+        public String getConfigMapName() {
+            return this.configMapName;
+        }
+
+        public boolean doubleConditionMet(){
+            return (contractAvailable.get() && offloadedNamespaceAvailable.get());
+        }
+
+    }
+
+    private final SyncPatchedContract syncPatchedContract = new SyncPatchedContract();
     private static ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
 
+    
     List<String> namespacesToExclude = new ArrayList<>(Arrays.asList(
             "calico-apiserver",
             "calico-system",
@@ -138,7 +172,7 @@ public class KubernetesController {
                 watchNamespaces(client, api);
             } catch (Exception e) {
                 e.printStackTrace();
-                System.err.println("Error invoking Kubernetes' API: " + e.getMessage());
+                System.err.println("Error invoking Kubernetes' API in function START: " + e.getMessage());
             }
         });
 
@@ -177,11 +211,20 @@ public class KubernetesController {
             }
         });
 
+        Thread contractThread = new Thread(() -> {
+            try {
+                watchContract(client);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        });
+
         peeringCandidatesThread.start();
         //defaultDenyNetworkPolicyThread.start();
         namespaceThread.start();
         podThread.start();
         tunnelEndpointThread.start();
+        contractThread.start();
     }
 
     public void watchPods(ApiClient client, CoreV1Api api) throws Exception {
@@ -257,6 +300,9 @@ public class KubernetesController {
                             startModuleTimer(client);
                             firstCallToModuletimer = false;
                         }
+                        // first time this happens, trigger the offloading of the configMap containing the request intents of the consumer
+                        syncPatchedContract.compareSetOffloadedNamespaceAvailable(false, true);
+                        checkDoubleCondition();
                     } 
                     if (!namespacesToExclude.contains(namespace.getMetadata().getName())){
                         CreateDefaultDenyNetworkPolicies(client, namespace.getMetadata().getName());
@@ -278,7 +324,7 @@ public class KubernetesController {
                 }
             }
         } catch (ApiException e) {
-            System.err.println("Error invoking Kubernetes API: " + e.getMessage());
+            System.err.println("Error invoking Kubernetes API for watchNamespaces function: " + e.getMessage());
             System.err.println("Error code: " + e.getCode());
             System.err.println("Error message: " + e.getResponseBody());
             e.printStackTrace();
@@ -658,6 +704,96 @@ public class KubernetesController {
 
     }
 
+    public void watchContract(ApiClient client) throws Exception {
+        try {
+            CustomObjectsApi customObjectsApi = new CustomObjectsApi(client);
+            Watch<JsonObject> watch = Watch.createWatch(
+                client,
+                customObjectsApi.listNamespacedCustomObjectCall(
+                    "reservation.fluidos.eu",
+                    "v1alpha1",
+                    "fluidos",
+                    "contracts",
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    true,
+                    null),
+                new TypeToken<Watch.Response<JsonObject>>() {
+                }.getType());
+
+            for (Watch.Response<JsonObject> item : watch) {
+                System.out.println("Event received by contract watcher: " + item.type);
+                if (item.type.equals("MODIFIED")) {
+                    JsonObject contract = item.object;
+                    //TODO: add configmap name based on contract field 
+                    syncPatchedContract.setContractAvailable(true, ""); //contract available! -> might be convenient to better check the condition
+                    checkDoubleCondition(); //trigger the condition check on the offloaded NS also, if met then trigger the creation of the configMap in the offloaded NS
+                    System.out.println("Contract modified: " + contract.getAsJsonObject("metadata").get("name").getAsString());
+                }
+            }
+        }
+        catch (ApiException e) {
+            System.err.println("Error invoking Kubernetes API: " + e.getMessage());
+            System.err.println("Error code: " + e.getCode());
+            System.err.println("Error message: " + e.getResponseBody());
+            e.printStackTrace();
+        }
+    }
+
+    private void checkDoubleCondition(){
+        if(syncPatchedContract.doubleConditionMet()){
+            String configMapName = syncPatchedContract.getConfigMapName();
+            offloadIntentsCM(configMapName); //double condition met -> offload a configMap to inform the provider about the consumer's intents
+        }
+    }
+
+    private void offloadIntentsCM(String configMapToCreateName){
+        try {
+            // strategy: replicate "consumer-network-intent" from "fluidos" to the first available offloaded namespace (added by the NS watcher)
+            String sourceNamespace = "fluidos";
+            String configMapName = "consumer-network-intent"; 
+             CoreV1Api api = new CoreV1Api(client);
+
+            // Read the ConfigMap from the local namespace
+            V1ConfigMap sourceConfigMap = api.readNamespacedConfigMap(configMapName, sourceNamespace, null);
+
+            if (sourceConfigMap != null && !offloadedNamespace.isEmpty()) {
+            String targetNamespace = offloadedNamespace.get(0);
+
+            V1ConfigMap targetConfigMap = new V1ConfigMap();
+            V1ObjectMeta meta = new V1ObjectMeta();
+            meta.setName(configMapName);
+            meta.setNamespace(targetNamespace);
+            targetConfigMap.setMetadata(meta);
+            targetConfigMap.setData(sourceConfigMap.getData());
+
+            try {
+                api.createNamespacedConfigMap(targetNamespace, targetConfigMap, null, null, null);
+                System.out.println("ConfigMap " + configMapName + " replicated to namespace " + targetNamespace);
+            } catch (ApiException e) {
+                if (e.getCode() == 409) { // Already exists, so replace it
+                api.replaceNamespacedConfigMap(configMapName, targetNamespace, targetConfigMap, null, null, null);
+                System.out.println("ConfigMap " + configMapName + " replaced in namespace " + targetNamespace);
+                } else {
+                System.err.println("Error replicating ConfigMap to namespace " + targetNamespace + ": " + e.getResponseBody());
+                }
+            }
+            } else {
+            System.err.println("Source ConfigMap " + configMapName + " not found in namespace " + sourceNamespace + " or no offloaded namespace available.");
+            }
+        } catch (Exception e) {
+            System.err.println("Exception during ConfigMap replication: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+    
     public void watchPeeringCandidates(ApiClient client) throws Exception {
         try {
             CustomObjectsApi customObjectsApi = new CustomObjectsApi(client);

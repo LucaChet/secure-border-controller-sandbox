@@ -161,6 +161,7 @@ eu/fluidos/jaxb/EventCondition.class
 eu/fluidos/jaxb/Site2SiteNetworkConfiguration.class
 eu/fluidos/jaxb/PrivacyActionType.class
 eu/fluidos/jaxb/URLRewritingCapability.class
+eu/fluidos/Controller/KubernetesController$SyncPatchedContract.class
 eu/fluidos/Controller/KubernetesController.class
 eu/fluidos/jaxb/ModelParameters.class
 eu/fluidos/Crds/TunnelEndpoint$Status$Connection.class
@@ -202,6 +203,7 @@ eu/fluidos/jaxb/AuthzDecisionCapabiliy.class
 eu/fluidos/jaxb/Dependency.class
 eu/fluidos/jaxb/Vancouver.class
 eu/fluidos/jaxb/TrafficMIXERTechnologyParameter.class
+eu/fluidos/Controller/KubernetesController$5.class
 eu/fluidos/jaxb/FiveGSecuredServiceAction.class
 eu/fluidos/jaxb/ExternalData.class
 eu/fluidos/jaxb/ConfigurationCondition.class
