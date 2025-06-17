@@ -10,9 +10,9 @@ kubectl label namespace products name=products
 liqoctl offload namespace payments --pod-offloading-strategy Remote
 liqoctl offload namespace products --pod-offloading-strategy Remote
 # Deploy the offloaded resources
-kubectl apply -f ./deployments/consumer/offload
+#kubectl apply -f ./deployments/consumer/offload
 # Deploy the configMap with intents
-kubectl apply -f ./deployments/consumer/request_intents_map.yaml
+#kubectl apply -f ./deployments/consumer/request_intents_map.yaml
 
 echo ""
 sleep 3

@@ -331,11 +331,13 @@ public class KubernetesController {
                         }
                     } else if (isNamespaceToOffload(namespace)) {
                         // first time this happens, trigger the offloading of the configMap containing the request intents of the consumer
-                        syncPatchedContract.compareSetOffloadedNamespaceAvailable(false, true, namespace.getMetadata().getName());
                         System.out.println("Condition on NS offloaded met - NS to offload: " + namespace.getMetadata().getName());
-                        checkDoubleCondition();
-                        String key = allowedIpList.keySet().iterator().next();
-                        createNetworkPolicyForIPRange(client, namespace, key);
+                        if(syncPatchedContract.compareSetOffloadedNamespaceAvailable(false, true, namespace.getMetadata().getName())) {
+                            checkDoubleCondition();
+                        }
+                        //TODO: need to verify where data is now stored (no tunnelEndpoint resource in cluster)
+                        // String key = allowedIpList.keySet().iterator().next();
+                        // createNetworkPolicyForIPRange(client, namespace, key);
                     }
                 }
             }
@@ -784,9 +786,13 @@ public class KubernetesController {
 
             // Read the ConfigMap from the local namespace
             V1ConfigMap sourceConfigMap = api.readNamespacedConfigMap(configMapName, sourceNamespace, null);
-            System.out.println("Source configmap" + sourceConfigMap == null ? " not found" : " found");
+            if(sourceConfigMap == null) {
+                System.out.println("Source configmap not found in namespace " + sourceNamespace);
+            } else {
+                System.out.println("Source configmap found in namespace " + sourceNamespace);
+            }
             
-            if (sourceConfigMap != null && !offloadedNamespace.isEmpty()) {
+            if (sourceConfigMap != null) {
 
             V1ConfigMap targetConfigMap = new V1ConfigMap();
             V1ObjectMeta meta = new V1ObjectMeta();
