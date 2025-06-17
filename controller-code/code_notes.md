@@ -55,9 +55,38 @@ Si potrebbe quasi rinominare per coerenza con il nome del progetto, essendo il c
 >    - Usare un file di configurazione esterno
 >    - Usare una variabile d'ambiente
 >    - altro..?
-8. ❌ testare la funzione `verify` così da avere prova che funzioni, scoprire perchè passa il check sul primo peeringcandidate
-9. la funzione `createProviderCluster` *non ha senso* 
+8. ✅ testare la funzione `verify` così da avere prova che funzioni, scoprire perchè passa il check sul primo peeringcandidate
+9. ✅ la funzione `createProviderCluster` *non ha senso* 
 10. per testare il controllore come componente di un cluster KinD: 
     - compilare il codice sorgente
     - creare una nuova docker image usando il Dockerfile
     - cambiare il template del manifesto YAML
+
+## TODO: sync 2
+1. PER LA DEMO! la `verify` dovrebbe restituire un ranking dei candidati al peering anzichè semplicemente escludere o accettare (true/false) i singoli candidati. In questo modo l'armonizzazione verrebbe sfruttata appieno nel suo algoritmo complesso, visto che al momento uno dei due lati degli intenti (richiesta o autorizzazione) sono una wildcard `*` che rende banale l'armonizzazione.
+2. ✅ `verify` non deve avere il cluster tra gli argomenti, ma soltanto i `requestIntent` e gli `authorizationIntent`
+3. ✅ rimuovere le mappe dalla verify, visto che tanto non viene effettuato il check a basso livello sui pods ma soltanto ad alto livello sulle label
+4.  creare un watcher su una configMap (quella di UMU)
+5. ✅ trovare un modo per aspettare che delle risorse siano pronte: quando ho ricevuto i PeeringCandidates devo aspettare la ConfigMap di UMU per poi accedervi una volta che esiste ed è popolata
+>   ⚠️ busy waiting con while loop: da testare -> TEST OK ✅
+6. DEMO: lanciare un test con n provider e un solo consumer 
+7. Rendere la config map creata (e offloaded) con un nome che dipenda da quello che leggo nel field apposito del contratto (riga 700 controller)
+8. Rimuovere dai log del SBC l'errore 404 causato dal watcher sulla CRD TunnelEndpoint (che forse non esiste più)
+⚠️ modificata logica `callVerifier` rimuovendo il check atomico che sia possibile chiamare una sola volta la funzione verify all'arrivo dei PeeringCandidates!! 
+⚠️ monitorare PR fluidos node per fixare l'errore sui peeringCandidates che arrivano vuoti
+⚠️ PER LA DEMO! fix immagine docker per il SBC in modo da non dover fare la docker build in locale e load in kind a mano!
+---
+
+# Demo Cleanup
+#### On CONSUMER cluster:
+- delete allocation & reservation
+- delete peeringCandidate
+- delete solver 
+- delete contract
+- delete discovery 
+- ⚠️ liqo unpeer (uninstall liqo?)
+
+#### On PROVIDER cluster: 
+- delete allocation
+- delete contract
+- ⚠️ liqo unpeer (uninstall liqo?)

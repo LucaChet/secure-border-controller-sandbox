@@ -1,2 +1,3 @@
-/home/luca/FluidosProject/secure-border-controller-sandbox/controller-code/src/test/java/eu/fluidos/VerifyTest.java
-/home/luca/FluidosProject/secure-border-controller-sandbox/controller-code/src/test/java/eu/fluidos/AppTest.java
+/home/luca/FluidosProject/secure-border-controller-sandbox/controller-code/src/test/java/eu/fluidos/harmonizationTests/HarmonizationServiceTest.java
+/home/luca/FluidosProject/secure-border-controller-sandbox/controller-code/src/test/java/eu/fluidos/harmonizationTests/HarmonizationUtilsTest.java
+/home/luca/FluidosProject/secure-border-controller-sandbox/controller-code/src/test/java/eu/fluidos/harmonizationTests/VerifyTest.java

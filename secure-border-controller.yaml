@@ -16,7 +16,7 @@ spec:
       serviceAccountName: secure-border-controller
       containers:
       - name: secure-border-controller
-        image: fpizzato/border-protection:0.1.0
-        imagePullPolicy: Always
+        image: secure-border-controller
+        imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 8080

@@ -21,41 +21,30 @@ import io.kubernetes.client.openapi.models.V1NetworkPolicySpec;
 import io.kubernetes.client.openapi.models.V1ObjectMeta;
 import io.kubernetes.client.openapi.models.V1Pod;
 import io.kubernetes.client.openapi.models.V1PodList;
-import io.kubernetes.client.util.ClientBuilder;
 import io.kubernetes.client.util.Config;
 import io.kubernetes.client.util.Watch;
 import io.kubernetes.client.util.Yaml;
-import io.kubernetes.client.util.credentials.AccessTokenAuthentication;
-import io.kubernetes.client.util.wait.Wait;
-import okhttp3.Request;
 
 import java.io.File;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.rmi.server.ExportException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import eu.fluidos.Module;
 import eu.fluidos.jaxb.AuthorizationIntents;
 import eu.fluidos.jaxb.CIDRSelector;
-import eu.fluidos.jaxb.ConfigurationCondition;
 import eu.fluidos.jaxb.ConfigurationRule;
-import eu.fluidos.jaxb.ExternalData;
-import eu.fluidos.jaxb.HSPL;
 import eu.fluidos.jaxb.ITResourceOrchestrationType;
 import eu.fluidos.jaxb.KeyValue;
 import eu.fluidos.jaxb.KubernetesNetworkFilteringAction;
@@ -65,42 +54,25 @@ import eu.fluidos.jaxb.Priority;
 import eu.fluidos.jaxb.ProtocolType;
 import eu.fluidos.jaxb.RequestIntents;
 import eu.fluidos.jaxb.ResourceSelector;
-import eu.fluidos.traslator.Ruleinfo;
 
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import org.apache.logging.log4j.core.tools.picocli.CommandLine.ExecutionException;
-import org.jose4j.json.internal.json_simple.JSONArray;
-import org.jose4j.json.internal.json_simple.JSONObject;
-import org.jose4j.json.internal.json_simple.parser.JSONParser;
 
 import eu.fluidos.Crds.TunnelEndpoint;
 import eu.fluidos.harmonization.HarmonizationController;
-import eu.fluidos.harmonization.HarmonizationService;
 import eu.fluidos.Namespace;
 import eu.fluidos.Pod;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.reflect.TypeToken;
-import com.google.gson.stream.JsonReader;
-import com.google.protobuf.BoolValue;
-import com.google.gson.Gson;
-import com.google.gson.JsonArray;
 import com.google.gson.JsonParser;
-import com.google.gson.JsonSyntaxException;
-
-import ch.qos.logback.classic.joran.action.ConfigurationAction;
-import ch.qos.logback.core.Context;
-import eu.fluidos.harmonization.*;;
 
 public class KubernetesController {
-    private final ITResourceOrchestrationType intents;
     private static final Logger LOGGER = Logger.getLogger(KubernetesController.class.getName());
     private List<String> offloadedNamespace;
     private Map<String, List<String>> allowedIpList;
@@ -111,8 +83,51 @@ public class KubernetesController {
     private V1NamespaceList providerNamespaceList;
     private V1NamespaceList consumerNamespaceList;
     private boolean firstCallToModuletimer = true;
+    
+    private static class SyncPatchedContract {
+        public final AtomicBoolean contractAvailable = new AtomicBoolean(false);
+        public final AtomicBoolean offloadedNamespaceAvailable = new AtomicBoolean(false);
+        public String configMapName = "";
+        public String targetNS = "";
+        public SyncPatchedContract() {}
+
+        public void setContractAvailable(boolean value, String configMapName) {
+            this.contractAvailable.set(value);
+            if (configMapName != null && !configMapName.isEmpty()) {
+                this.configMapName = configMapName;
+            }
+        }
+
+        public void setOffloadedNamespaceAvailable(boolean value) {
+            this.contractAvailable.set(value);
+        }
+
+        public boolean compareSetOffloadedNamespaceAvailable(boolean expected, boolean desired, String targetNamespaceName) {
+            targetNS = targetNamespaceName;
+            return this.offloadedNamespaceAvailable.compareAndSet(expected, desired);
+        }
+
+        public String getConfigMapName() {
+            return this.configMapName;
+        }
+
+        public boolean doubleConditionMet(){
+            return (contractAvailable.get() && offloadedNamespaceAvailable.get());
+        }
+
+        private Object getContractAvailable() {
+            return this.contractAvailable.get();   
+        }
+        
+        private Object getOffloadedNamespaceAvailable() {
+            return this.offloadedNamespaceAvailable.get();
+        }
+    }
+
+    private final SyncPatchedContract syncPatchedContract = new SyncPatchedContract();
     private static ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
 
+    
     List<String> namespacesToExclude = new ArrayList<>(Arrays.asList(
             "calico-apiserver",
             "calico-system",
@@ -126,8 +141,7 @@ public class KubernetesController {
             "calico-apiserver",
             "liqo"));
 
-    public KubernetesController(ITResourceOrchestrationType intents) {
-        this.intents = intents;
+    public KubernetesController() {
         try {
             String token = new String(
                     Files.readAllBytes(Paths.get("/var/run/secrets/kubernetes.io/serviceaccount/token"))); // Path per
@@ -167,7 +181,7 @@ public class KubernetesController {
                 watchNamespaces(client, api);
             } catch (Exception e) {
                 e.printStackTrace();
-                System.err.println("Error invoking Kubernetes' API: " + e.getMessage());
+                System.err.println("Error invoking Kubernetes' API in namespace thread: " + e.getMessage());
             }
         });
 
@@ -190,13 +204,15 @@ public class KubernetesController {
             }
         });
 
-        Thread tunnelEndpointThread = new Thread(() -> {
+        // Useless watcher? Test if it's safe to remove
+        /*Thread tunnelEndpointThread = new Thread(() -> {
             try {
                 watchTunnelEndpoint(client);
             } catch (Exception e) {
                 e.printStackTrace();
             }
         });
+        */
 
         Thread peeringCandidatesThread = new Thread(() -> {
             try {
@@ -206,11 +222,20 @@ public class KubernetesController {
             }
         });
 
+        Thread contractThread = new Thread(() -> {
+            try {
+                watchContract(client);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        });
+
         peeringCandidatesThread.start();
         //defaultDenyNetworkPolicyThread.start();
         namespaceThread.start();
         podThread.start();
-        tunnelEndpointThread.start();
+        //tunnelEndpointThread.start();
+        contractThread.start();
     }
 
     public void watchPods(ApiClient client, CoreV1Api api) throws Exception {
@@ -286,8 +311,12 @@ public class KubernetesController {
                             startModuleTimer(client);
                             firstCallToModuletimer = false;
                         }
+                        // first time this happens, trigger the offloading of the configMap containing the request intents of the consumer
+                        syncPatchedContract.compareSetOffloadedNamespaceAvailable(false, true, namespace.getMetadata().getName());
+                        System.out.println("Condition on NS offloaded met");
+                        checkDoubleCondition();
                     } 
-                    if (!namespacesToExclude.contains(namespace.getMetadata().getName())){
+                    if (!namespacesToExclude.contains(namespace.getMetadata().getName())  && !namespace.getMetadata().getName().contains("liqo")){
                         CreateDefaultDenyNetworkPolicies(client, namespace.getMetadata().getName());
                         createAllowKubeDNSNetworkPolicy(client, namespace.getMetadata().getName());
                     }
@@ -301,13 +330,19 @@ public class KubernetesController {
                             firstCallToModuletimer = false;
                         }
                     } else if (isNamespaceToOffload(namespace)) {
-                        String key = allowedIpList.keySet().iterator().next();
-                        createNetworkPolicyForIPRange(client, namespace, key);
+                        // first time this happens, trigger the offloading of the configMap containing the request intents of the consumer
+                        System.out.println("Condition on NS offloaded met - NS to offload: " + namespace.getMetadata().getName());
+                        if(syncPatchedContract.compareSetOffloadedNamespaceAvailable(false, true, namespace.getMetadata().getName())) {
+                            checkDoubleCondition();
+                        }
+                        //TODO: need to verify where data is now stored (no tunnelEndpoint resource in cluster)
+                        // String key = allowedIpList.keySet().iterator().next();
+                        // createNetworkPolicyForIPRange(client, namespace, key);
                     }
                 }
             }
         } catch (ApiException e) {
-            System.err.println("Error invoking Kubernetes API: " + e.getMessage());
+            System.err.println("Error invoking Kubernetes API for watchNamespaces function: " + e.getMessage());
             System.err.println("Error code: " + e.getCode());
             System.err.println("Error message: " + e.getResponseBody());
             e.printStackTrace();
@@ -393,6 +428,8 @@ public class KubernetesController {
         firstCallToModuletimer = true;
     }
 
+    //might be useless -> no tunnelendpoint resurce in cluster
+    /* 
     public void watchTunnelEndpoint(ApiClient client) throws Exception {
         try {
             CustomObjectsApi customObjectsApi = new CustomObjectsApi(client);
@@ -427,7 +464,7 @@ public class KubernetesController {
                                 this.allowedIpList.put(tunnelEndpoint.getMetadata().getLabels().get("clusterID"),
                                         new ArrayList<>(connection.getPeerConfiguration().getAllowedIPs()));
                                 for (Map.Entry<String, List<String>> entry : this.allowedIpList.entrySet()) {
-                                    // System.out.println(entry);
+                                    System.out.println(entry);
                                 }
                             }
                         }
@@ -441,7 +478,8 @@ public class KubernetesController {
             e.printStackTrace();
         }
     }
-
+    */
+    
     public AuthorizationIntents listContract(ApiClient client) throws Exception {
         AuthorizationIntents contrAuthorizationIntents = new AuthorizationIntents();
         try {
@@ -472,8 +510,7 @@ public class KubernetesController {
                         ? (String) flavorSpec.get("networkPropertyType")
                         : null;
 
-                String networkRequests = spec.containsKey("networkRequests") ? (String) spec.get("networkRequests")
-                        : null;
+                String networkRequests = spec.containsKey("networkRequests") ? (String) spec.get("networkRequests") : null;
                 String buyerClusterID = spec.containsKey("buyerClusterID") ? (String) spec.get("buyerClusterID") : null;
 
                 if (networkRequests != null) {
@@ -601,7 +638,7 @@ public class KubernetesController {
         consumerNamespaceList = new V1NamespaceList();
 
         for (V1Namespace namespace : namespaceList.getItems()) {
-            if (!namespacesToExclude.contains(namespace.getMetadata().getName())
+            if (!namespacesToExclude.contains(namespace.getMetadata().getName()) && !namespace.getMetadata().getName().contains("liqo")
                     && !namespace.getMetadata().getName().contains("remote-cluster")) {
                 if (!namespace.getMetadata().equals(null)
                         && !namespace.getMetadata().getLabels().containsKey("liqo.io/remote-cluster-id")) {
@@ -688,6 +725,102 @@ public class KubernetesController {
 
     }
 
+    public void watchContract(ApiClient client) throws Exception {
+        try {
+            CustomObjectsApi customObjectsApi = new CustomObjectsApi(client);
+            Watch<JsonObject> watch = Watch.createWatch(
+                client,
+                customObjectsApi.listNamespacedCustomObjectCall(
+                    "reservation.fluidos.eu",
+                    "v1alpha1",
+                    "fluidos",
+                    "contracts",
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    true,
+                    null),
+                new TypeToken<Watch.Response<JsonObject>>() {
+                }.getType());
+
+            for (Watch.Response<JsonObject> item : watch) {
+                System.out.println("Event received by contract watcher: " + item.type);
+                if (item.type.equals("MODIFIED")) {
+                    JsonObject contract = item.object;
+                    //TODO: add configmap name based on contract field 
+                    syncPatchedContract.setContractAvailable(true, ""); //contract available! -> might be convenient to better check the condition
+                    System.out.println("Contract modified: " + contract.getAsJsonObject("metadata").get("name").getAsString()); 
+                    checkDoubleCondition(); //trigger the condition check on the offloaded NS also, if met then trigger the creation of the configMap in the offloaded NS
+                }
+            }
+        }
+        catch (ApiException e) {
+            System.err.println("Error invoking Kubernetes API: " + e.getMessage());
+            System.err.println("Error code: " + e.getCode());
+            System.err.println("Error message: " + e.getResponseBody());
+            e.printStackTrace();
+        }
+    }
+
+    private void checkDoubleCondition(){
+        System.out.println("Checking double condition, contract has been modified (" + syncPatchedContract.getContractAvailable().toString() + "), namespace ("+ syncPatchedContract.getOffloadedNamespaceAvailable()+")");
+        if(syncPatchedContract.doubleConditionMet()){
+            String configMapName = syncPatchedContract.getConfigMapName();
+            System.out.println("Double condition met -> calling the offloadCM function");
+            offloadIntentsCM(configMapName, syncPatchedContract.targetNS); //double condition met -> offload a configMap to inform the provider about the consumer's intents
+        }
+    }
+
+    private void offloadIntentsCM(String configMapToCreateName, String targetNamespaceName){
+        try {
+            // strategy: replicate "consumer-network-intent" from "fluidos" to the first available offloaded namespace (added by the NS watcher)
+            String sourceNamespace = "fluidos";
+            String configMapName = "consumer-network-intent"; 
+             CoreV1Api api = new CoreV1Api(client);
+
+            // Read the ConfigMap from the local namespace
+            V1ConfigMap sourceConfigMap = api.readNamespacedConfigMap(configMapName, sourceNamespace, null);
+            if(sourceConfigMap == null) {
+                System.out.println("Source configmap not found in namespace " + sourceNamespace);
+            } else {
+                System.out.println("Source configmap found in namespace " + sourceNamespace);
+            }
+            
+            if (sourceConfigMap != null) {
+
+            V1ConfigMap targetConfigMap = new V1ConfigMap();
+            V1ObjectMeta meta = new V1ObjectMeta();
+            meta.setName(configMapName);
+            meta.setNamespace(targetNamespaceName);
+            targetConfigMap.setMetadata(meta);
+            targetConfigMap.setData(sourceConfigMap.getData());
+
+            try {
+                api.createNamespacedConfigMap(targetNamespaceName, targetConfigMap, null, null, null);
+                System.out.println("ConfigMap " + configMapName + " replicated to namespace " + targetNamespaceName);
+            } catch (ApiException e) {
+                if (e.getCode() == 409) { // Already exists, so replace it
+                    api.replaceNamespacedConfigMap(configMapName, targetNamespaceName, targetConfigMap, null, null, null);
+                    System.out.println("ConfigMap " + configMapName + " replaced in namespace " + targetNamespaceName);
+                } else {
+                    System.err.println("Error replicating ConfigMap to namespace " + targetNamespaceName + ": " + e.getResponseBody());
+                }
+            }
+            } else {
+                System.err.println("Source ConfigMap " + configMapName + " not found in namespace " + sourceNamespace + " or no offloaded namespace available.");
+            }
+        } catch (Exception e) {
+            System.err.println("Exception during ConfigMap replication: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+    
     public void watchPeeringCandidates(ApiClient client) throws Exception {
         try {
             CustomObjectsApi customObjectsApi = new CustomObjectsApi(client);
@@ -715,7 +848,6 @@ public class KubernetesController {
             AtomicBoolean firstTimeToCallVerifier = new AtomicBoolean(false);
             AtomicBoolean timerStarted = new AtomicBoolean(false);
             List<JsonObject> listTypeData = new ArrayList<>();
-            String flavorName = new String();
             String peeringCandidateName = new String();
             List<AuthorizationIntents> listReturnedAuthorizationIntents = new ArrayList<>();
             List<String> listPeeringCandidateName = new ArrayList<>();
@@ -725,8 +857,6 @@ public class KubernetesController {
                     peeringCandidateName = peeringCandidate.getAsJsonObject("metadata").get("name").getAsString();
                     JsonObject spec = peeringCandidate.getAsJsonObject("spec");
                     JsonObject flavor = spec.getAsJsonObject("flavor");
-                    JsonObject metadata = flavor.getAsJsonObject("metadata");
-                    flavorName = metadata.get("name").getAsString();
                     System.out.println("Peering Candidate: " + peeringCandidateName);
                     JsonObject spec1 = flavor.getAsJsonObject("spec");
                     JsonObject flavorType = spec1.getAsJsonObject("flavorType");
@@ -736,16 +866,22 @@ public class KubernetesController {
                         listReturnedAuthorizationIntents.add(returnedAuthorizationIntents);
                         listPeeringCandidateName.add(peeringCandidateName);
                     }
+                    else{
+                        System.out.println("Authorization Intents from peering candidate " + peeringCandidateName + " resulted to be null");
+                    }
 
                     if (timerStarted.compareAndSet(false, true)) {
                         scheduler.schedule(() -> {
-                            firstTimeToCallVerifier.set(true);
+                            timerStarted.set(false);
+                            //firstTimeToCallVerifier.set(true);
                             if (!listReturnedAuthorizationIntents.isEmpty()) {
                                 System.out.println("Start the verifier");
                                 callVerifier(listReturnedAuthorizationIntents, listPeeringCandidateName);
                             }
                         }, 5, TimeUnit.SECONDS);
                     }
+
+                    /*
                     listTypeData.add(typeData);
                     if (firstTimeToCallVerifier.get()) {
                         if (!listReturnedAuthorizationIntents.isEmpty()) {
@@ -753,6 +889,7 @@ public class KubernetesController {
                             callVerifier(listReturnedAuthorizationIntents, listPeeringCandidateName);
                         }
                     }
+                         */
                 }
             }
         } catch (ApiException e) {
@@ -829,22 +966,35 @@ public class KubernetesController {
         return null;
     }
 
-    private void callVerifier(List<AuthorizationIntents> listReturnedAuthorizationIntents, List<String> names) {
+    private void callVerifier(List<AuthorizationIntents> authIntentsFromFlavors, List<String> PeeringCandidateNames) {
         int i = 0;
-        for (AuthorizationIntents authorizationIntents : listReturnedAuthorizationIntents) {
+        for (AuthorizationIntents authorizationIntents : authIntentsFromFlavors) {
             if (authorizationIntents != null && authorizationIntents.getForbiddenConnectionList().size() > 0
                     && authorizationIntents.getMandatoryConnectionList().size() > 0) {
                 HarmonizationController harmonizationController = new HarmonizationController();
-                System.out.println("[+] Processing PeeringCandidate: " + names.get(i));
-                Boolean value = harmonizationController.verify(createCluster(client, "consumer"), authorizationIntents);
-                if (value) {
-                    System.out.println("[+] Result for PeeringCandidate " + names.get(i) + " from Verifier is: "
-                            + Main.ANSI_GREEN + value + Main.ANSI_RESET);
-                    return;
+                System.out.println("[+] Received PeeringCandidate: " + PeeringCandidateNames.get(i));
+                //TODO: extract request intents from standard ConfigMap (created by UMU's meta orchestrator) and pass it to verify directly
+                //Boolean value = harmonizationController.verify(createCluster(client, "consumer"), authorizationIntents); -> LEGACY CALL
+                RequestIntents requestIntents;
+                try {
+                    System.out.println("Waiting for \"consumer-network-intent\" configMap to become available before starting verification process...");
+                    while ((requestIntents = accessConfigMap(client, "fluidos", "consumer-network-intent")) == null){ //Name and Namespace of ConfigMap to be defined
+                        Thread.sleep(1);
+                    }
+                
+                    Boolean value = harmonizationController.verify(requestIntents, authorizationIntents);
+                    if (value) {
+                        System.out.println("[+] Result for PeeringCandidate " + PeeringCandidateNames.get(i) + " from Verifier is: "
+                                + Main.ANSI_GREEN + value + Main.ANSI_RESET);
+                        return;
+                    }
+                    System.out.println("[+] Result for PeeringCandidate " + PeeringCandidateNames.get(i) + " from Verifier is: "
+                            + Main.ANSI_RED + value + Main.ANSI_RESET);
+                    System.out.println(" ");
+                } catch (Exception e) {
+                    System.out.println("Exception occured while waiting for configMap containing consumer's Request Intents (UMU) to become available");
+                    e.printStackTrace();
                 }
-                System.out.println("[+] Result for PeeringCandidate " + names.get(i) + " from Verifier is: "
-                        + Main.ANSI_RED + value + Main.ANSI_RESET);
-                System.out.println(" ");
             }
             i++;
         }
@@ -943,7 +1093,7 @@ public class KubernetesController {
         return selector;
     }
 
-    void StampaAuthIntents(AuthorizationIntents authorizationIntents) {
+    void PrintAuthIntents(AuthorizationIntents authorizationIntents) {
         System.out.println(" ");
         if (authorizationIntents != null) {
             System.out.println("Mandatory communications: ");
