@@ -71,10 +71,10 @@ Si potrebbe quasi rinominare per coerenza con il nome del progetto, essendo il c
 >   ⚠️ busy waiting con while loop: da testare -> TEST OK ✅
 6. DEMO: lanciare un test con n provider e un solo consumer 
 7. Rendere la config map creata (e offloaded) con un nome che dipenda da quello che leggo nel field apposito del contratto (riga 700 controller)
-
+8. Rimuovere dai log del SBC l'errore 404 causato dal watcher sulla CRD TunnelEndpoint (che forse non esiste più)
 ⚠️ modificata logica `callVerifier` rimuovendo il check atomico che sia possibile chiamare una sola volta la funzione verify all'arrivo dei PeeringCandidates!! 
 ⚠️ monitorare PR fluidos node per fixare l'errore sui peeringCandidates che arrivano vuoti
-
+⚠️ PER LA DEMO! fix immagine docker per il SBC in modo da non dover fare la docker build in locale e load in kind a mano!
 ---
 
 # Demo Cleanup
@@ -83,7 +83,10 @@ Si potrebbe quasi rinominare per coerenza con il nome del progetto, essendo il c
 - delete peeringCandidate
 - delete solver 
 - delete contract
+- delete discovery 
+- ⚠️ liqo unpeer (uninstall liqo?)
 
 #### On PROVIDER cluster: 
 - delete allocation
 - delete contract
+- ⚠️ liqo unpeer (uninstall liqo?)

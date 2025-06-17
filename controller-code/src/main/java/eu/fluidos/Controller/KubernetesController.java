@@ -83,11 +83,12 @@ public class KubernetesController {
     private V1NamespaceList providerNamespaceList;
     private V1NamespaceList consumerNamespaceList;
     private boolean firstCallToModuletimer = true;
+    
     private static class SyncPatchedContract {
         public final AtomicBoolean contractAvailable = new AtomicBoolean(false);
         public final AtomicBoolean offloadedNamespaceAvailable = new AtomicBoolean(false);
         public String configMapName = "";
-
+        public String targetNS = "";
         public SyncPatchedContract() {}
 
         public void setContractAvailable(boolean value, String configMapName) {
@@ -101,8 +102,9 @@ public class KubernetesController {
             this.contractAvailable.set(value);
         }
 
-        public boolean compareSetOffloadedNamespaceAvailable(boolean expected, boolean desired) {
-            return this.contractAvailable.compareAndSet(expected, desired);
+        public boolean compareSetOffloadedNamespaceAvailable(boolean expected, boolean desired, String targetNamespaceName) {
+            targetNS = targetNamespaceName;
+            return this.offloadedNamespaceAvailable.compareAndSet(expected, desired);
         }
 
         public String getConfigMapName() {
@@ -113,6 +115,13 @@ public class KubernetesController {
             return (contractAvailable.get() && offloadedNamespaceAvailable.get());
         }
 
+        private Object getContractAvailable() {
+            return this.contractAvailable.get();   
+        }
+        
+        private Object getOffloadedNamespaceAvailable() {
+            return this.offloadedNamespaceAvailable.get();
+        }
     }
 
     private final SyncPatchedContract syncPatchedContract = new SyncPatchedContract();
@@ -172,7 +181,7 @@ public class KubernetesController {
                 watchNamespaces(client, api);
             } catch (Exception e) {
                 e.printStackTrace();
-                System.err.println("Error invoking Kubernetes' API in function START: " + e.getMessage());
+                System.err.println("Error invoking Kubernetes' API in namespace thread: " + e.getMessage());
             }
         });
 
@@ -195,13 +204,15 @@ public class KubernetesController {
             }
         });
 
-        Thread tunnelEndpointThread = new Thread(() -> {
+        // Useless watcher? Test if it's safe to remove
+        /*Thread tunnelEndpointThread = new Thread(() -> {
             try {
                 watchTunnelEndpoint(client);
             } catch (Exception e) {
                 e.printStackTrace();
             }
         });
+        */
 
         Thread peeringCandidatesThread = new Thread(() -> {
             try {
@@ -223,7 +234,7 @@ public class KubernetesController {
         //defaultDenyNetworkPolicyThread.start();
         namespaceThread.start();
         podThread.start();
-        tunnelEndpointThread.start();
+        //tunnelEndpointThread.start();
         contractThread.start();
     }
 
@@ -301,10 +312,11 @@ public class KubernetesController {
                             firstCallToModuletimer = false;
                         }
                         // first time this happens, trigger the offloading of the configMap containing the request intents of the consumer
-                        syncPatchedContract.compareSetOffloadedNamespaceAvailable(false, true);
+                        syncPatchedContract.compareSetOffloadedNamespaceAvailable(false, true, namespace.getMetadata().getName());
+                        System.out.println("Condition on NS offloaded met");
                         checkDoubleCondition();
                     } 
-                    if (!namespacesToExclude.contains(namespace.getMetadata().getName())){
+                    if (!namespacesToExclude.contains(namespace.getMetadata().getName())  && !namespace.getMetadata().getName().contains("liqo")){
                         CreateDefaultDenyNetworkPolicies(client, namespace.getMetadata().getName());
                         createAllowKubeDNSNetworkPolicy(client, namespace.getMetadata().getName());
                     }
@@ -318,6 +330,10 @@ public class KubernetesController {
                             firstCallToModuletimer = false;
                         }
                     } else if (isNamespaceToOffload(namespace)) {
+                        // first time this happens, trigger the offloading of the configMap containing the request intents of the consumer
+                        syncPatchedContract.compareSetOffloadedNamespaceAvailable(false, true, namespace.getMetadata().getName());
+                        System.out.println("Condition on NS offloaded met - NS to offload: " + namespace.getMetadata().getName());
+                        checkDoubleCondition();
                         String key = allowedIpList.keySet().iterator().next();
                         createNetworkPolicyForIPRange(client, namespace, key);
                     }
@@ -410,6 +426,8 @@ public class KubernetesController {
         firstCallToModuletimer = true;
     }
 
+    //might be useless -> no tunnelendpoint resurce in cluster
+    /* 
     public void watchTunnelEndpoint(ApiClient client) throws Exception {
         try {
             CustomObjectsApi customObjectsApi = new CustomObjectsApi(client);
@@ -444,7 +462,7 @@ public class KubernetesController {
                                 this.allowedIpList.put(tunnelEndpoint.getMetadata().getLabels().get("clusterID"),
                                         new ArrayList<>(connection.getPeerConfiguration().getAllowedIPs()));
                                 for (Map.Entry<String, List<String>> entry : this.allowedIpList.entrySet()) {
-                                    // System.out.println(entry);
+                                    System.out.println(entry);
                                 }
                             }
                         }
@@ -458,7 +476,8 @@ public class KubernetesController {
             e.printStackTrace();
         }
     }
-
+    */
+    
     public AuthorizationIntents listContract(ApiClient client) throws Exception {
         AuthorizationIntents contrAuthorizationIntents = new AuthorizationIntents();
         try {
@@ -617,7 +636,7 @@ public class KubernetesController {
         consumerNamespaceList = new V1NamespaceList();
 
         for (V1Namespace namespace : namespaceList.getItems()) {
-            if (!namespacesToExclude.contains(namespace.getMetadata().getName())
+            if (!namespacesToExclude.contains(namespace.getMetadata().getName()) && !namespace.getMetadata().getName().contains("liqo")
                     && !namespace.getMetadata().getName().contains("remote-cluster")) {
                 if (!namespace.getMetadata().equals(null)
                         && !namespace.getMetadata().getLabels().containsKey("liqo.io/remote-cluster-id")) {
@@ -734,8 +753,8 @@ public class KubernetesController {
                     JsonObject contract = item.object;
                     //TODO: add configmap name based on contract field 
                     syncPatchedContract.setContractAvailable(true, ""); //contract available! -> might be convenient to better check the condition
+                    System.out.println("Contract modified: " + contract.getAsJsonObject("metadata").get("name").getAsString()); 
                     checkDoubleCondition(); //trigger the condition check on the offloaded NS also, if met then trigger the creation of the configMap in the offloaded NS
-                    System.out.println("Contract modified: " + contract.getAsJsonObject("metadata").get("name").getAsString());
                 }
             }
         }
@@ -748,13 +767,15 @@ public class KubernetesController {
     }
 
     private void checkDoubleCondition(){
+        System.out.println("Checking double condition, contract has been modified (" + syncPatchedContract.getContractAvailable().toString() + "), namespace ("+ syncPatchedContract.getOffloadedNamespaceAvailable()+")");
         if(syncPatchedContract.doubleConditionMet()){
             String configMapName = syncPatchedContract.getConfigMapName();
-            offloadIntentsCM(configMapName); //double condition met -> offload a configMap to inform the provider about the consumer's intents
+            System.out.println("Double condition met -> calling the offloadCM function");
+            offloadIntentsCM(configMapName, syncPatchedContract.targetNS); //double condition met -> offload a configMap to inform the provider about the consumer's intents
         }
     }
 
-    private void offloadIntentsCM(String configMapToCreateName){
+    private void offloadIntentsCM(String configMapToCreateName, String targetNamespaceName){
         try {
             // strategy: replicate "consumer-network-intent" from "fluidos" to the first available offloaded namespace (added by the NS watcher)
             String sourceNamespace = "fluidos";
@@ -763,30 +784,30 @@ public class KubernetesController {
 
             // Read the ConfigMap from the local namespace
             V1ConfigMap sourceConfigMap = api.readNamespacedConfigMap(configMapName, sourceNamespace, null);
-
+            System.out.println("Source configmap" + sourceConfigMap == null ? " not found" : " found");
+            
             if (sourceConfigMap != null && !offloadedNamespace.isEmpty()) {
-            String targetNamespace = offloadedNamespace.get(0);
 
             V1ConfigMap targetConfigMap = new V1ConfigMap();
             V1ObjectMeta meta = new V1ObjectMeta();
             meta.setName(configMapName);
-            meta.setNamespace(targetNamespace);
+            meta.setNamespace(targetNamespaceName);
             targetConfigMap.setMetadata(meta);
             targetConfigMap.setData(sourceConfigMap.getData());
 
             try {
-                api.createNamespacedConfigMap(targetNamespace, targetConfigMap, null, null, null);
-                System.out.println("ConfigMap " + configMapName + " replicated to namespace " + targetNamespace);
+                api.createNamespacedConfigMap(targetNamespaceName, targetConfigMap, null, null, null);
+                System.out.println("ConfigMap " + configMapName + " replicated to namespace " + targetNamespaceName);
             } catch (ApiException e) {
                 if (e.getCode() == 409) { // Already exists, so replace it
-                api.replaceNamespacedConfigMap(configMapName, targetNamespace, targetConfigMap, null, null, null);
-                System.out.println("ConfigMap " + configMapName + " replaced in namespace " + targetNamespace);
+                    api.replaceNamespacedConfigMap(configMapName, targetNamespaceName, targetConfigMap, null, null, null);
+                    System.out.println("ConfigMap " + configMapName + " replaced in namespace " + targetNamespaceName);
                 } else {
-                System.err.println("Error replicating ConfigMap to namespace " + targetNamespace + ": " + e.getResponseBody());
+                    System.err.println("Error replicating ConfigMap to namespace " + targetNamespaceName + ": " + e.getResponseBody());
                 }
             }
             } else {
-            System.err.println("Source ConfigMap " + configMapName + " not found in namespace " + sourceNamespace + " or no offloaded namespace available.");
+                System.err.println("Source ConfigMap " + configMapName + " not found in namespace " + sourceNamespace + " or no offloaded namespace available.");
             }
         } catch (Exception e) {
             System.err.println("Exception during ConfigMap replication: " + e.getMessage());
@@ -838,6 +859,9 @@ public class KubernetesController {
                     if (returnedAuthorizationIntents != null) {
                         listReturnedAuthorizationIntents.add(returnedAuthorizationIntents);
                         listPeeringCandidateName.add(peeringCandidateName);
+                    }
+                    else{
+                        System.out.println("Authorization Intents from peering candidate " + peeringCandidateName + " resulted to be null");
                     }
 
                     if (timerStarted.compareAndSet(false, true)) {
@@ -942,11 +966,12 @@ public class KubernetesController {
             if (authorizationIntents != null && authorizationIntents.getForbiddenConnectionList().size() > 0
                     && authorizationIntents.getMandatoryConnectionList().size() > 0) {
                 HarmonizationController harmonizationController = new HarmonizationController();
-                System.out.println("[+] Processing PeeringCandidate: " + PeeringCandidateNames.get(i));
+                System.out.println("[+] Received PeeringCandidate: " + PeeringCandidateNames.get(i));
                 //TODO: extract request intents from standard ConfigMap (created by UMU's meta orchestrator) and pass it to verify directly
                 //Boolean value = harmonizationController.verify(createCluster(client, "consumer"), authorizationIntents); -> LEGACY CALL
                 RequestIntents requestIntents;
                 try {
+                    System.out.println("Waiting for \"consumer-network-intent\" configMap to become available before starting verification process...");
                     while ((requestIntents = accessConfigMap(client, "fluidos", "consumer-network-intent")) == null){ //Name and Namespace of ConfigMap to be defined
                         Thread.sleep(1);
                     }
