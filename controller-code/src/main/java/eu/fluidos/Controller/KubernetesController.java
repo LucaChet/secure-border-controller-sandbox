@@ -311,10 +311,6 @@ public class KubernetesController {
                             startModuleTimer(client);
                             firstCallToModuletimer = false;
                         }
-                        // first time this happens, trigger the offloading of the configMap containing the request intents of the consumer
-                        syncPatchedContract.compareSetOffloadedNamespaceAvailable(false, true, namespace.getMetadata().getName());
-                        System.out.println("Condition on NS offloaded met");
-                        checkDoubleCondition();
                     } 
                     if (!namespacesToExclude.contains(namespace.getMetadata().getName())  && !namespace.getMetadata().getName().contains("liqo")){
                         CreateDefaultDenyNetworkPolicies(client, namespace.getMetadata().getName());
