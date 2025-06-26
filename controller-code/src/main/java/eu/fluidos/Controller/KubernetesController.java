@@ -45,7 +45,6 @@ import eu.fluidos.Module;
 import eu.fluidos.jaxb.AuthorizationIntents;
 import eu.fluidos.jaxb.CIDRSelector;
 import eu.fluidos.jaxb.ConfigurationRule;
-import eu.fluidos.jaxb.ITResourceOrchestrationType;
 import eu.fluidos.jaxb.KeyValue;
 import eu.fluidos.jaxb.KubernetesNetworkFilteringAction;
 import eu.fluidos.jaxb.KubernetesNetworkFilteringCondition;
@@ -58,8 +57,6 @@ import eu.fluidos.jaxb.ResourceSelector;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-
-import eu.fluidos.Crds.TunnelEndpoint;
 import eu.fluidos.harmonization.HarmonizationController;
 import eu.fluidos.Namespace;
 import eu.fluidos.Pod;
@@ -96,10 +93,6 @@ public class KubernetesController {
             if (configMapName != null && !configMapName.isEmpty()) {
                 this.configMapName = configMapName;
             }
-        }
-
-        public void setOffloadedNamespaceAvailable(boolean value) {
-            this.contractAvailable.set(value);
         }
 
         public boolean compareSetOffloadedNamespaceAvailable(boolean expected, boolean desired, String targetNamespaceName) {
@@ -185,16 +178,6 @@ public class KubernetesController {
             }
         });
 
-        /* Unused thread: applyDefaultNetworkPolicies has been integrated into watchNameSpaces
-        Thread defaultDenyNetworkPolicyThread = new Thread(() -> {
-            try {
-                applyDefaultDenyNetworkPolicies(client, api);
-            } catch (Exception e) {
-                e.printStackTrace();
-                System.err.println("Error invoking Kubernetes' API: " + e.getMessage());
-            }
-        });*/
-
         Thread podThread = new Thread(() -> {
             try {
                 watchPods(client, api);
@@ -204,15 +187,15 @@ public class KubernetesController {
             }
         });
 
-        // Useless watcher? Test if it's safe to remove
-        /*Thread tunnelEndpointThread = new Thread(() -> {
+        
+        Thread liqoConfigurationThread = new Thread(() -> {
             try {
-                watchTunnelEndpoint(client);
+                watchLiqoConfiguration(client);
             } catch (Exception e) {
                 e.printStackTrace();
             }
         });
-        */
+        
 
         Thread peeringCandidatesThread = new Thread(() -> {
             try {
@@ -231,11 +214,10 @@ public class KubernetesController {
         });
 
         peeringCandidatesThread.start();
-        //defaultDenyNetworkPolicyThread.start();
         namespaceThread.start();
         podThread.start();
-        //tunnelEndpointThread.start();
         contractThread.start();
+        liqoConfigurationThread.start();
     }
 
     public void watchPods(ApiClient client, CoreV1Api api) throws Exception {
@@ -258,40 +240,6 @@ public class KubernetesController {
             }
         }
     }
-
-    /* Useless since its logic has been integrated in the namespace watcher, which now adds also the netpols according to the matched conditions
-    public void applyDefaultDenyNetworkPolicies(ApiClient client, CoreV1Api api) throws Exception {
-        try {
-            Watch<V1Namespace> namespaceWatch = Watch.createWatch(
-                    client,
-                    api.listNamespaceCall(null, null, null, null, null, null, null, null, null, Boolean.TRUE, null),
-                    new TypeToken<Watch.Response<V1Namespace>>() {
-                    }.getType());
-            for (Watch.Response<V1Namespace> item : namespaceWatch) {
-                V1Namespace namespace = item.object;
-
-                if (item.type.equals("ADDED") && !namespacesToExclude.contains(namespace.getMetadata().getName())) {
-                    CreateDefaultDenyNetworkPolicies(client, namespace.getMetadata().getName());
-                    createAllowKubeDNSNetworkPolicy(client, namespace.getMetadata().getName());
-                    if (isNamespaceOffloaded(namespace)) {
-                        createNetworkPolicyForIPRange(client, namespace, namespace.getMetadata().getLabels().get("liqo.io/remote-cluster-id"));
-                    }
-                } else if (item.type.equals("DELETED") && isNamespaceOffloaded(namespace)) {
-                    System.out.println("Offloaded Namespace deleted: " + namespace.getMetadata().getName());
-                } else if (item.type.equals("MODIFIED") && isNamespaceToOffload(namespace)) {
-                    String key = allowedIpList.keySet().iterator().next();
-                    createNetworkPolicyForIPRange(client, namespace, key);
-                    System.out.println("Namespace: " + namespace.getMetadata().getName() + " modified");
-                }
-            }
-        } catch (ApiException e) {
-            System.err.println("Error invoking Kubernetes API: " + e.getMessage());
-            System.err.println("Error code: " + e.getCode());
-            System.err.println("Error message: " + e.getResponseBody());
-            e.printStackTrace();
-        }
-    }
-    */
 
     public void watchNamespaces(ApiClient client, CoreV1Api api) throws Exception {
         try {
@@ -326,14 +274,12 @@ public class KubernetesController {
                             firstCallToModuletimer = false;
                         }
                     } else if (isNamespaceToOffload(namespace)) {
-                        // first time this happens, trigger the offloading of the configMap containing the request intents of the consumer
-                        System.out.println("Condition on NS offloaded met - NS to offload: " + namespace.getMetadata().getName());
                         if(syncPatchedContract.compareSetOffloadedNamespaceAvailable(false, true, namespace.getMetadata().getName())) {
+                            System.out.println("Condition on NS offloaded met - NS to offload: " + namespace.getMetadata().getName());
                             checkDoubleCondition();
                         }
-                        //TODO: need to verify where data is now stored (no tunnelEndpoint resource in cluster)
-                        // String key = allowedIpList.keySet().iterator().next();
-                        // createNetworkPolicyForIPRange(client, namespace, key);
+                        String key = allowedIpList.keySet().iterator().next();
+                        createNetworkPolicyForIPRange(client, namespace, key);
                     }
                 }
             }
@@ -345,44 +291,6 @@ public class KubernetesController {
         }
     }
 
-    /* Backup function of watchNamespaces, before integrating the applyDefaultNetworkPolicies() logic in it, as above
-    
-    public void watchNamespaces(ApiClient client, CoreV1Api api) throws Exception {
-        try {
-            Watch<V1Namespace> namespaceWatch = Watch.createWatch(
-                    client,
-                    api.listNamespaceCall(null, null, null, null, null, null, null, null, null, Boolean.TRUE, null),
-                    new TypeToken<Watch.Response<V1Namespace>>() {
-                    }.getType());
-            for (Watch.Response<V1Namespace> item : namespaceWatch) {
-                V1Namespace namespace = item.object;
-                if (item.type.equals("ADDED") && isNamespaceOffloaded(namespace)) {
-                    offloadedNamespace.add(namespace.getMetadata().getName());
-                    System.out.println("New Offloaded Namespace: " + namespace.getMetadata().getName());
-                    if (firstCallToModuletimer) {
-                        startModuleTimer(client);
-                        firstCallToModuletimer = false;
-                    }
-
-                } else if (item.type.equals("DELETED") && isNamespaceOffloaded(namespace)) {
-                    offloadedNamespace.remove(namespace.getMetadata().getName());
-                    System.out.println("Offloaded Namespace deleted: " + namespace.getMetadata().getName());
-                } else if (item.type.equals("MODIFIED") && isNamespaceOffloaded(namespace)) {
-                    if (firstCallToModuletimer) {
-                        startModuleTimer(client);
-                        firstCallToModuletimer = false;
-                    }
-                }
-            }
-        } catch (ApiException e) {
-            System.err.println("Error invoking Kubernetes API: " + e.getMessage());
-            System.err.println("Error code: " + e.getCode());
-            System.err.println("Error message: " + e.getResponseBody());
-            e.printStackTrace();
-        }
-    }
-     */
-
     private void startModuleTimer(ApiClient client) {
         ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
         scheduler.schedule(() -> {
@@ -390,7 +298,6 @@ public class KubernetesController {
             try {
                 AuthorizationIntents contractAuthIntents = listContract(client);
 
-                // should we support for a contract with empty authorization intents?
                 if (contractAuthIntents != null) {
                     if (reqIntentsList.size() > 0) {
                         List<RequestIntents> harmonizedIntents = new ArrayList<>();
@@ -475,6 +382,117 @@ public class KubernetesController {
         }
     }
     */
+    // instead of the tunnelEndpoint watcher, we use the liqo configuration watcher as the resource changed in the cluster
+    //TODO: remove debug prints
+    public void watchLiqoConfiguration(ApiClient client) throws Exception {
+        try {
+            CustomObjectsApi customObjectsApi = new CustomObjectsApi(client);
+            Watch<JsonObject> watch = Watch.createWatch(
+            client,
+            customObjectsApi.listClusterCustomObjectCall(
+                "networking.liqo.io",
+                "v1beta1",
+                "configurations",
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                true,
+                null),
+            new TypeToken<Watch.Response<JsonObject>>() {}.getType()
+            );
+
+            for (Watch.Response<JsonObject> item : watch) {
+            System.out.println("[DEBUG] Received event type: " + item.type);
+            if (item.object == null) {
+                System.out.println("[DEBUG] Event object is null");
+                continue;
+            }
+            if (item.type.equals("ADDED")) {
+                JsonObject configuration = item.object;
+                System.out.println("[DEBUG] ADDED Liqo Configuration resource: " + configuration);
+            }
+            if (item.type.equals("MODIFIED")) {
+                JsonObject configuration = item.object;
+                JsonObject metadata = configuration.getAsJsonObject("metadata");
+                JsonObject status = configuration.getAsJsonObject("status");
+                if (metadata == null) {
+                System.out.println("[DEBUG] Metadata is null in configuration: " + configuration);
+                }
+                if (status == null) {
+                System.out.println("[DEBUG] Status is null in configuration: " + configuration);
+                }
+                if (metadata != null && status != null) {
+                JsonObject labels = metadata.getAsJsonObject("labels");
+                if (labels == null) {
+                    System.out.println("[DEBUG] Labels are null in metadata: " + metadata);
+                }
+                String clusterID = null;
+                if (labels != null && labels.has("liqo.io/remote-cluster-id")) {
+                    clusterID = labels.get("liqo.io/remote-cluster-id").getAsString();
+                } else {
+                    System.out.println("[DEBUG] 'liqo.io/remote-cluster-id' label missing in labels: " + labels);
+                }
+                JsonObject remote = status.getAsJsonObject("remote");
+                if (remote == null) {
+                    System.out.println("[DEBUG] Remote is null in status: " + status);
+                }
+                if (clusterID != null && remote != null && remote.has("cidr")) {
+                    JsonObject cidr = remote.getAsJsonObject("cidr");
+                    if (cidr == null) {
+                    System.out.println("[DEBUG] CIDR is null in remote: " + remote);
+                    }
+                    List<String> allowedIPs = new ArrayList<>();
+                    if (cidr != null && cidr.has("external")) {
+                    for (JsonElement ip : cidr.getAsJsonArray("external")) {
+                        allowedIPs.add(ip.getAsString());
+                    }
+                    } else {
+                    System.out.println("[DEBUG] No 'external' field in cidr: " + cidr);
+                    }
+                    if (cidr != null && cidr.has("pod")) {
+                    for (JsonElement ip : cidr.getAsJsonArray("pod")) {
+                        allowedIPs.add(ip.getAsString());
+                    }
+                    } else {
+                    System.out.println("[DEBUG] No 'pod' field in cidr: " + cidr);
+                    }
+                    if (!allowedIPs.isEmpty()) {
+                    this.allowedIpList.put(clusterID, allowedIPs);
+                    System.out.println("Updated allowedIpList for clusterID " + clusterID + ": " + allowedIPs);
+                    } else {
+                    System.out.println("[DEBUG] allowedIPs is empty for clusterID " + clusterID + ", configuration: " + configuration);
+                    }
+                } else {
+                    System.out.println("[DEBUG] clusterID or remote/cidr missing, skipping entry. clusterID: " + clusterID + ", remote: " + remote);
+                }
+                }
+            }
+            // Also handle DELETED events to remove entries
+            if (item.type.equals("DELETED")) {
+                JsonObject configuration = item.object;
+                JsonObject metadata = configuration.getAsJsonObject("metadata");
+                if (metadata != null && metadata.has("labels")) {
+                String clusterID = metadata.getAsJsonObject("labels").get("liqo.io/remote-cluster-id").getAsString();
+                this.allowedIpList.remove(clusterID);
+                System.out.println("Removed allowedIpList entry for clusterID " + clusterID);
+                } else {
+                System.out.println("[DEBUG] Metadata or labels missing in DELETED event: " + configuration);
+                }
+            }
+            }
+        } catch (ApiException e) {
+            System.err.println("Error invoking Kubernetes API: error generated from watcher on Liqo's Configuration. " + e.getMessage());
+            System.err.println("Error code: " + e.getCode());
+            System.err.println("Error message: " + e.getResponseBody());
+            e.printStackTrace();
+        }
+    }
     
     public AuthorizationIntents listContract(ApiClient client) throws Exception {
         AuthorizationIntents contrAuthorizationIntents = new AuthorizationIntents();
@@ -746,13 +764,12 @@ public class KubernetesController {
                 }.getType());
 
             for (Watch.Response<JsonObject> item : watch) {
-                System.out.println("Event received by contract watcher: " + item.type);
                 if (item.type.equals("MODIFIED")) {
                     JsonObject contract = item.object;
                     //TODO: add configmap name based on contract field 
                     syncPatchedContract.setContractAvailable(true, ""); //contract available! -> might be convenient to better check the condition
                     System.out.println("Contract modified: " + contract.getAsJsonObject("metadata").get("name").getAsString()); 
-                    checkDoubleCondition(); //trigger the condition check on the offloaded NS also, if met then trigger the creation of the configMap in the offloaded NS
+                    checkDoubleCondition(); 
                 }
             }
         }
@@ -765,7 +782,6 @@ public class KubernetesController {
     }
 
     private void checkDoubleCondition(){
-        System.out.println("Checking double condition, contract has been modified (" + syncPatchedContract.getContractAvailable().toString() + "), namespace ("+ syncPatchedContract.getOffloadedNamespaceAvailable()+")");
         if(syncPatchedContract.doubleConditionMet()){
             String configMapName = syncPatchedContract.getConfigMapName();
             System.out.println("Double condition met -> calling the offloadCM function");
@@ -775,7 +791,6 @@ public class KubernetesController {
 
     private void offloadIntentsCM(String configMapToCreateName, String targetNamespaceName){
         try {
-            // strategy: replicate "consumer-network-intent" from "fluidos" to the first available offloaded namespace (added by the NS watcher)
             String sourceNamespace = "fluidos";
             String configMapName = "consumer-network-intent"; 
              CoreV1Api api = new CoreV1Api(client);
@@ -876,16 +891,6 @@ public class KubernetesController {
                             }
                         }, 5, TimeUnit.SECONDS);
                     }
-
-                    /*
-                    listTypeData.add(typeData);
-                    if (firstTimeToCallVerifier.get()) {
-                        if (!listReturnedAuthorizationIntents.isEmpty()) {
-                            System.out.println("Start the verifier");
-                            callVerifier(listReturnedAuthorizationIntents, listPeeringCandidateName);
-                        }
-                    }
-                         */
                 }
             }
         } catch (ApiException e) {
@@ -969,8 +974,6 @@ public class KubernetesController {
                     && authorizationIntents.getMandatoryConnectionList().size() > 0) {
                 HarmonizationController harmonizationController = new HarmonizationController();
                 System.out.println("[+] Received PeeringCandidate: " + PeeringCandidateNames.get(i));
-                //TODO: extract request intents from standard ConfigMap (created by UMU's meta orchestrator) and pass it to verify directly
-                //Boolean value = harmonizationController.verify(createCluster(client, "consumer"), authorizationIntents); -> LEGACY CALL
                 RequestIntents requestIntents;
                 try {
                     System.out.println("Waiting for \"consumer-network-intent\" configMap to become available before starting verification process...");
@@ -1268,7 +1271,12 @@ public class KubernetesController {
             api.createNamespacedNetworkPolicy(Namespace, ingressPolicy, null, null, null);
             System.out.println("Network Policies created for namespace " + Namespace);
         } catch (ApiException e) {
-            System.err.println("Error while generating network policies: " + e.getResponseBody());
+            if(e.getCode() == 409) {
+                System.out.println("Default DENY Network Policy already exists");
+            } else {
+                System.err.println("Error while creating Network Policy Default DENY: " + e.getResponseBody());
+                e.printStackTrace();
+            }
         }
     }
 
@@ -1348,8 +1356,12 @@ public class KubernetesController {
             System.out.println(
                     "Network Policy successfully created to allow traffic to kube-dns in namespace " + namespace);
         } catch (ApiException e) {
-            System.err.println("Error while creating Network Policy: " + e.getResponseBody());
-            e.printStackTrace();
+            if(e.getCode() == 409) {
+                System.out.println("Network Policy already exists in namespace " + namespace);
+            } else {
+                System.err.println("Error while creating Network Policy: " + e.getResponseBody());
+                e.printStackTrace();
+            }
         }
     }
 

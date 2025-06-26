@@ -1,16 +1,13 @@
-eu/fluidos/Crds/TunnelEndpoint$Status.class
 eu/fluidos/Controller/KubernetesController$1.class
 eu/fluidos/Controller/KubernetesController$2.class
-eu/fluidos/Crds/TunnelEndpoint$Status$Connection$PeerConfiguration.class
-eu/fluidos/Crds/TunnelEndpoint.class
 eu/fluidos/Cluster.class
 eu/fluidos/Namespace.class
 eu/fluidos/LabelsKeyValue.class
 eu/fluidos/cluster/ClusterController.class
-eu/fluidos/Crds/TunnelEndpoint$Status$Connection.class
 eu/fluidos/Controller/KubernetesController$4.class
 eu/fluidos/Controller/KubernetesController$3.class
 eu/fluidos/Pod.class
+eu/fluidos/Controller/KubernetesController$5.class
 eu/fluidos/traslator/Translator$1.class
 eu/fluidos/cluster/ClusterService.class
 eu/fluidos/cluster/ClusterData.class
