@@ -66,7 +66,7 @@ Si potrebbe quasi rinominare per coerenza con il nome del progetto, essendo il c
 2. ✅ rimuovere le mappe dalla verify, visto che tanto non viene effettuato il check a basso livello sui pods ma soltanto ad alto livello sulle label
 3. ✅ creare un watcher su una configMap (quella di UMU)
 4. ✅ trovare un modo per aspettare che delle risorse siano pronte: quando ho ricevuto i PeeringCandidates devo aspettare la ConfigMap di UMU per poi accedervi una volta che esiste ed è popolata
-5. Rendere la config map creata (e offloaded) con un nome che dipenda da quello che leggo nel field apposito del contratto (riga 700 controller)
+5. ✅ Rendere la config map creata (e offloaded) con un nome che dipenda da quello che leggo nel field apposito del contratto (riga 700 controller)
 6. ✅ Rimuovere dai log del SBC l'errore 404 causato dal watcher sulla CRD TunnelEndpoint (che forse non esiste più)
 
 > ⚠️ monitorare PR fluidos node per fixare l'errore sui peeringCandidates che arrivano vuoti

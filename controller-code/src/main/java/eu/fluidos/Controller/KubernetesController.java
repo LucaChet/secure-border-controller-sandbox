@@ -766,9 +766,8 @@ public class KubernetesController {
             for (Watch.Response<JsonObject> item : watch) {
                 if (item.type.equals("MODIFIED")) {
                     JsonObject contract = item.object;
-                    //TODO: add configmap name based on contract field 
-                    syncPatchedContract.setContractAvailable(true, ""); //contract available! -> might be convenient to better check the condition
-                    System.out.println("Contract modified: " + contract.getAsJsonObject("metadata").get("name").getAsString()); 
+                    String configMapName = contract.getAsJsonObject("spec").get("networkRequests").getAsString();
+                    syncPatchedContract.setContractAvailable(true, configMapName); //contract available! -> might be convenient to better check the condition
                     checkDoubleCondition(); 
                 }
             }
@@ -784,19 +783,18 @@ public class KubernetesController {
     private void checkDoubleCondition(){
         if(syncPatchedContract.doubleConditionMet()){
             String configMapName = syncPatchedContract.getConfigMapName();
-            System.out.println("Double condition met -> calling the offloadCM function");
-            offloadIntentsCM(configMapName, syncPatchedContract.targetNS); //double condition met -> offload a configMap to inform the provider about the consumer's intents
+            System.out.println("Replicating request intents configMap to offloaded namespace for harmonization on provider side: " + configMapName);
+            offloadIntentsCM(configMapName, syncPatchedContract.targetNS);
         }
     }
 
     private void offloadIntentsCM(String configMapToCreateName, String targetNamespaceName){
         try {
-            String sourceNamespace = "fluidos";
-            String configMapName = "consumer-network-intent"; 
-             CoreV1Api api = new CoreV1Api(client);
+            String sourceNamespace = "fluidos"; 
+            CoreV1Api api = new CoreV1Api(client);
 
             // Read the ConfigMap from the local namespace
-            V1ConfigMap sourceConfigMap = api.readNamespacedConfigMap(configMapName, sourceNamespace, null);
+            V1ConfigMap sourceConfigMap = api.readNamespacedConfigMap(configMapToCreateName, sourceNamespace, null);
             if(sourceConfigMap == null) {
                 System.out.println("Source configmap not found in namespace " + sourceNamespace);
             } else {
@@ -807,24 +805,24 @@ public class KubernetesController {
 
             V1ConfigMap targetConfigMap = new V1ConfigMap();
             V1ObjectMeta meta = new V1ObjectMeta();
-            meta.setName(configMapName);
+            meta.setName(configMapToCreateName);
             meta.setNamespace(targetNamespaceName);
             targetConfigMap.setMetadata(meta);
             targetConfigMap.setData(sourceConfigMap.getData());
 
             try {
                 api.createNamespacedConfigMap(targetNamespaceName, targetConfigMap, null, null, null);
-                System.out.println("ConfigMap " + configMapName + " replicated to namespace " + targetNamespaceName);
+                System.out.println("ConfigMap " + configMapToCreateName + " replicated to namespace " + targetNamespaceName);
             } catch (ApiException e) {
-                if (e.getCode() == 409) { // Already exists, so replace it
-                    api.replaceNamespacedConfigMap(configMapName, targetNamespaceName, targetConfigMap, null, null, null);
-                    System.out.println("ConfigMap " + configMapName + " replaced in namespace " + targetNamespaceName);
+                if (e.getCode() == 409) { 
+                    api.replaceNamespacedConfigMap(configMapToCreateName, targetNamespaceName, targetConfigMap, null, null, null);
+                    System.out.println("ConfigMap " + configMapToCreateName + " replaced in namespace " + targetNamespaceName);
                 } else {
                     System.err.println("Error replicating ConfigMap to namespace " + targetNamespaceName + ": " + e.getResponseBody());
                 }
             }
             } else {
-                System.err.println("Source ConfigMap " + configMapName + " not found in namespace " + sourceNamespace + " or no offloaded namespace available.");
+                System.err.println("Source ConfigMap " + configMapToCreateName + " not found in namespace " + sourceNamespace + " or no offloaded namespace available.");
             }
         } catch (Exception e) {
             System.err.println("Exception during ConfigMap replication: " + e.getMessage());
