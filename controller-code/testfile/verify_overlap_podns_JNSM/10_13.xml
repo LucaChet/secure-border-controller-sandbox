@@ -1,0 +1,45 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<ITResourceOrchestration xmlns="http://modeliosoft/xsddesigner/a22bd60b-ee3d-425c-8618-beb6a854051a/ITResource.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="omspl_test_10_13" xsi:schemaLocation="http://modeliosoft/xsddesigner/a22bd60b-ee3d-425c-8618-beb6a854051a/ITResource.xsd ../../xsd/mspl.xsd">
+  <ITResource>
+    <configuration xsi:type="AuthorizationIntents">
+      <capability>
+        <Name>KubernetesNetworkFiltering</Name>
+      </capability>
+      <forbiddenConnectionList>
+        <configurationRuleAction xsi:type="KubernetesNetworkFilteringAction">
+          <KubernetesNetworkFilteringActionType>DENY</KubernetesNetworkFilteringActionType>
+        </configurationRuleAction>
+        <configurationCondition xsi:type="KubernetesNetworkFilteringCondition">
+          <isCNF>false</isCNF>
+          <source xsi:type="PodNamespaceSelector">
+            <isHostCluster>true</isHostCluster>
+            <pod>
+              <key>app</key>
+              <value>bank_payment</value>
+            </pod>
+            <namespace>
+              <key>name</key>
+              <value>turin</value>
+            </namespace>
+          </source>
+          <sourcePort>7072</sourcePort>
+          <destination xsi:type="PodNamespaceSelector">
+            <isHostCluster>false</isHostCluster>
+            <pod>
+              <key>app</key>
+              <value>bank_payment</value>
+            </pod>
+            <namespace>
+              <key>name</key>
+              <value>turin</value>
+            </namespace>
+          </destination>
+          <destinationPort>80</destinationPort>
+          <protocolType>ALL</protocolType>
+        </configurationCondition>
+        <Name>AuthorizationForbidden_10_13</Name>
+        <isCNF>false</isCNF>
+      </forbiddenConnectionList>
+    </configuration>
+  </ITResource>
+</ITResourceOrchestration>

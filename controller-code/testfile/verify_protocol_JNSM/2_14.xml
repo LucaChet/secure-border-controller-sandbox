@@ -1,0 +1,32 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<ITResourceOrchestration xmlns="http://modeliosoft/xsddesigner/a22bd60b-ee3d-425c-8618-beb6a854051a/ITResource.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="omspl_5b0fd7359a5e40fe92399710c1152ed9" xsi:schemaLocation="http://modeliosoft/xsddesigner/a22bd60b-ee3d-425c-8618-beb6a854051a/ITResource.xsd ../../xsd/mspl.xsd">
+  <ITResource>
+    <configuration xsi:type="AuthorizationIntents">
+      <capability>
+        <Name>KubernetesNetworkFiltering</Name>
+      </capability>
+      <forbiddenConnectionList>
+        <configurationRuleAction xsi:type="KubernetesNetworkFilteringAction">
+          <KubernetesNetworkFilteringActionType>DENY</KubernetesNetworkFilteringActionType>
+        </configurationRuleAction>
+        <configurationCondition xsi:type="KubernetesNetworkFilteringCondition">
+          <isCNF>false</isCNF>
+          <source xsi:type="CIDRSelector">
+            <isHostCluster>true</isHostCluster>
+            <addressRange>192.168.1.0/24</addressRange>
+          </source>
+          <sourcePort>80</sourcePort>
+          <destination xsi:type="CIDRSelector">
+            <isHostCluster>false</isHostCluster>
+            <addressRange>0.0.0.0/0</addressRange>
+          </destination>
+          <destinationPort>8080</destinationPort>
+          <protocolType>UDP</protocolType>
+        </configurationCondition>
+        <Name>AuthorizationForbidden_14</Name>
+        <isCNF>false</isCNF>
+      </forbiddenConnectionList>
+      
+    </configuration>
+  </ITResource>
+</ITResourceOrchestration>

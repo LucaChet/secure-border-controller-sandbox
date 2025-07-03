@@ -1,0 +1,39 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<ITResourceOrchestration xmlns="http://modeliosoft/xsddesigner/a22bd60b-ee3d-425c-8618-beb6a854051a/ITResource.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="omspl_5b0fd7359a5e40fe92399710c1152ed9" xsi:schemaLocation="http://modeliosoft/xsddesigner/a22bd60b-ee3d-425c-8618-beb6a854051a/ITResource.xsd ../../xsd/mspl.xsd">
+  <ITResource>
+    <configuration xsi:type="AuthorizationIntents">
+      <capability>
+        <Name>KubernetesNetworkFiltering</Name>
+      </capability>
+      <forbiddenConnectionList>
+        <configurationRuleAction xsi:type="KubernetesNetworkFilteringAction">
+          <KubernetesNetworkFilteringActionType>DENY</KubernetesNetworkFilteringActionType>
+        </configurationRuleAction>
+        <configurationCondition xsi:type="KubernetesNetworkFilteringCondition">
+          <isCNF>false</isCNF>
+          <source xsi:type="CIDRSelector">
+            <isHostCluster>true</isHostCluster>
+            <addressRange>172.16.0.0/12</addressRange>
+          </source>
+          <sourcePort>*</sourcePort>
+          <destination xsi:type="PodNamespaceSelector">
+            <isHostCluster>false</isHostCluster>
+            <pod>
+              <key>*</key>
+              <value>*</value>
+            </pod>
+            <namespace>
+              <key>*</key>
+              <value>rome</value>
+            </namespace>
+          </destination>
+          <destinationPort>53</destinationPort>
+          <protocolType>UDP</protocolType>
+        </configurationCondition>
+        <Name>AuthorizationForbidden_12</Name>
+        <isCNF>false</isCNF>
+      </forbiddenConnectionList>
+      
+    </configuration>
+  </ITResource>
+</ITResourceOrchestration>

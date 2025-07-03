@@ -1,0 +1,38 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<ITResourceOrchestration xmlns="http://modeliosoft/xsddesigner/a22bd60b-ee3d-425c-8618-beb6a854051a/ITResource.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="omspl_test_3_9" xsi:schemaLocation="http://modeliosoft/xsddesigner/a22bd60b-ee3d-425c-8618-beb6a854051a/ITResource.xsd ../../xsd/mspl.xsd">
+  <ITResource>
+    <configuration xsi:type="AuthorizationIntents">
+      <capability>
+        <Name>KubernetesNetworkFiltering</Name>
+      </capability>
+      <forbiddenConnectionList>
+        <configurationRuleAction xsi:type="KubernetesNetworkFilteringAction">
+          <KubernetesNetworkFilteringActionType>DENY</KubernetesNetworkFilteringActionType>
+        </configurationRuleAction>
+        <configurationCondition xsi:type="KubernetesNetworkFilteringCondition">
+          <isCNF>false</isCNF>
+          <source xsi:type="PodNamespaceSelector">
+            <isHostCluster>true</isHostCluster>
+            <pod>
+              <key>component</key>
+              <value>logging</value>
+            </pod>
+            <namespace>
+              <key>env</key>
+              <value>test</value>
+            </namespace>
+          </source>
+          <sourcePort>9200</sourcePort>
+          <destination xsi:type="CIDRSelector">
+            <isHostCluster>false</isHostCluster>
+            <addressRange>172.30.0.0/16</addressRange>
+          </destination>
+          <destinationPort>50-70</destinationPort>
+          <protocolType>UDP</protocolType>
+        </configurationCondition>
+        <Name>AuthorizationForbidden_3_9</Name>
+        <isCNF>false</isCNF>
+      </forbiddenConnectionList>
+    </configuration>
+  </ITResource>
+</ITResourceOrchestration>

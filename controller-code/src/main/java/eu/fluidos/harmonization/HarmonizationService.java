@@ -109,10 +109,10 @@ public class HarmonizationService{
 			return false;
 		}
 
-		System.out.println("[+] Checking authorization intents:");
-		harmonizationData.printAuthorizationIntents(authIntents); //Needed?
+		// System.out.println("[+] Checking authorization intents:");
+		// harmonizationData.printAuthorizationIntents(authIntents); //Needed?
 		
-		if (authIntents.getMandatoryConnectionList().size()>1 && !reqIntents.isAcceptMonitoring()) {
+		if (authIntents.getMandatoryConnectionList().size()>0 && !reqIntents.isAcceptMonitoring()) {
 			return false;
 		}
 		else

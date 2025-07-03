@@ -1,0 +1,32 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<ITResourceOrchestration xmlns="http://modeliosoft/xsddesigner/a22bd60b-ee3d-425c-8618-beb6a854051a/ITResource.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="omspl_5b0fd7359a5e40fe92399710c1152ed9" xsi:schemaLocation="http://modeliosoft/xsddesigner/a22bd60b-ee3d-425c-8618-beb6a854051a/ITResource.xsd ../../xsd/mspl.xsd">
+  <ITResource>
+    <configuration xsi:type="AuthorizationIntents">
+      <capability>
+        <Name>KubernetesNetworkFiltering</Name>
+      </capability>
+      
+      <mandatoryConnectionList>
+        <configurationRuleAction xsi:type="KubernetesNetworkFilteringAction">
+          <KubernetesNetworkFilteringActionType>ALLOW</KubernetesNetworkFilteringActionType>
+        </configurationRuleAction>
+        <configurationCondition xsi:type="KubernetesNetworkFilteringCondition">
+          <isCNF>false</isCNF>
+          <source xsi:type="CIDRSelector">
+            <isHostCluster>true</isHostCluster>
+            <addressRange>172.16.0.0/12</addressRange>
+          </source>
+          <sourcePort>*</sourcePort>
+          <destination xsi:type="CIDRSelector">
+            <isHostCluster>false</isHostCluster>
+            <addressRange>192.168.1.0/24</addressRange>
+          </destination>
+          <destinationPort>443</destinationPort>
+          <protocolType>ALL</protocolType>
+        </configurationCondition>
+        <Name>AuthorizationMandatory_5</Name>
+        <isCNF>false</isCNF>
+      </mandatoryConnectionList>
+    </configuration>
+  </ITResource>
+</ITResourceOrchestration>

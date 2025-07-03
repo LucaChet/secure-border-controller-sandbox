@@ -87,9 +87,9 @@ public class HarmonizationData {
 			KubernetesNetworkFilteringCondition tmpCond = (KubernetesNetworkFilteringCondition) confRule
 					.getConfigurationCondition();
 
-			loggerInfo.debug("[VERIFY] - processing rule "
-					+ HarmonizationUtils.kubernetesNetworkFilteringConditionToString(resCond) + " vs. "
-					+ HarmonizationUtils.kubernetesNetworkFilteringConditionToString(tmpCond));
+			// loggerInfo.debug("[VERIFY] - processing rule "
+			// 		+ HarmonizationUtils.kubernetesNetworkFilteringConditionToString(resCond) + " vs. "
+			// 		+ HarmonizationUtils.kubernetesNetworkFilteringConditionToString(tmpCond));
 
 			// Step-1: starts with protocol type. Detect if protocol types of res are overlapping with tmpCond.
 			overlap = HarmonizationUtils.verifyProtocolType(resCond.getProtocolType().value(),
@@ -107,7 +107,7 @@ public class HarmonizationData {
 
 			// Step-4: to have overlap, all the previous checks must be true.
 			if (overlap && overlapSrc && overlapDst && overlapDstPort) {
-				System.out.println("[VERIFY] - Found discordance between intents. ");
+				// System.out.println("[VERIFY] - Found discordance between intents. ");
 				return false;
 			}
 		}
