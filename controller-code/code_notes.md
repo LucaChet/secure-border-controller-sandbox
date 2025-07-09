@@ -48,11 +48,7 @@ Si potrebbe quasi rinominare per coerenza con il nome del progetto, essendo il c
 4. ✅ migliorare la leggibilità e la funzionalità della funzione `startModuleTimer`, rimuovere il catch vuoto
 5. ✅ sostituire timer di 5s con attesa automatica della risorsa `networkRequests` affinchè quando questa è pronta si esegua l'operazione
 6. ✅ rimuovere il thread `applyDefaultNetworkPolicies` spostandone la logica dentro al watcher dei namespace
-7. migliorare la funzione `verify`, rimuovendo il riferimento hardcoded al file XML contenente gli intenti in MSPL.
->   ⚠️ Possibili soluzioni:
->    - Usare un file di configurazione esterno
->    - Usare una variabile d'ambiente
->    - altro..?
+7. ✅ migliorare la funzione `verify`, rimuovendo il riferimento hardcoded al file XML contenente gli intenti in MSPL.
 8. ✅ testare la funzione `verify` così da avere prova che funzioni, scoprire perchè passa il check sul primo peeringcandidate
 9. ✅ la funzione `createProviderCluster` *non ha senso* 
 10. per testare il controllore come componente di un cluster KinD: 
@@ -91,3 +87,14 @@ Si potrebbe quasi rinominare per coerenza con il nome del progetto, essendo il c
 - delete contract
 - reset flavor(s) to available
 - ⚠️ liqo unpeer (uninstall liqo?)
+
+#### Liqo Unpeering
+- on the consumer, unoffload namespace `payments` e `products` 
+- on the consumer, unpeer passing local and remote kubeconfig, use the option to delete namespaces
+```bash
+liqoctl unpeer --kubeconfig $KUBECONFIG --remote-kubeconfig=/home/luca/FluidosProject/try/node/tools/scripts/fluidos-provider-1-config --delete-namespaces
+```
+- use peer command with the option to use a nodeport as gateway server service type
+```bash
+liqoctl peer --remote-kubeconfig /home/luca/FluidosProject/try/node/tools/scripts/fluidos-provider-1-config --gw-server-service-type NodePort
+```

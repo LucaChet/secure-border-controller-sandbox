@@ -1,0 +1,2418 @@
+﻿<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!--
+__author__ = "Alejandro Molina Zarca"
+__copyright__ = "Copyright 2021, INSPIRE 5G+ evolution from ANASTACIA H2020"
+__credits__ = ["Antonio Skarmeta", "Jorge Bernal Bernabé", "Alejandro Molina Zarca"]
+__license__ = "MIT"
+__version__ = "0.0.1"
+__maintainer__ = "Alejandro Molina Zarca"
+__email__ = "alejandro.mzarca@um.es"
+__status__ = "Development"
+-->
+<schema xmlns="http://www.w3.org/2001/XMLSchema"
+	xmlns:ITResource="http://modeliosoft/xsddesigner/a22bd60b-ee3d-425c-8618-beb6a854051a/ITResource.xsd"
+	targetNamespace="http://modeliosoft/xsddesigner/a22bd60b-ee3d-425c-8618-beb6a854051a/ITResource.xsd"
+	elementFormDefault="qualified"
+	xmlns:IoTHoneyNet="http://www.example.org/IoTHoneynetSchema">
+
+	<import namespace="http://www.example.org/IoTHoneynetSchema" schemaLocation="iot-honeynet.xsd"/>
+
+	<element name="ITResource" type="ITResource:ITResourceType"/>
+	<!-- ANASTACIA policy for orchestration -->
+	<element name="ITResourceOrchestration" type="ITResource:ITResourceOrchestrationType"/>
+	<complexType name="ITResourceOrchestrationType">
+		<sequence>
+			<element maxOccurs="unbounded" minOccurs="0" name="ITResource" type="ITResource:ITResourceType"/>
+			<element maxOccurs="1" minOccurs="0" name="priority" type="integer"/>
+			<element maxOccurs="1" minOccurs="0" name="dependencies" type="ITResource:Dependencies"/>
+			<!-- INSPIRE-5G+ ZSM enforcement domains-->
+			<element maxOccurs="1" minOccurs="0" name="orchestrationRequirements" type="ITResource:OrchestrationRequirements"/>
+      <element maxOccurs="1" minOccurs="0" name="enforcementRequirements" type="ITResource:EnforcementRequirements"/>
+		</sequence>
+		<attribute name="id" type="string"/>
+		<attribute name="tenantID" type="string"/>
+		<attribute name="sliceID" type="string"/>
+	</complexType>
+
+	<complexType name="ITResourceType">
+		<sequence>
+			<element maxOccurs="1" minOccurs="1" name="configuration" type="ITResource:Configuration"/>
+			<!-- ANASTACIA policy for orchestration extension -->
+			<element maxOccurs="1" minOccurs="0" name="priority" type="integer"/>
+			<element maxOccurs="1" minOccurs="0" name="dependencies" type="ITResource:Dependencies"/>
+			<element maxOccurs="1" minOccurs="0" name="enablerCandidates" type="ITResource:EnablerCandidates"/>
+			<!-- /ANASTACIA policy for orchestration extension -->
+			<!-- INSPIRE-5G+ ZSM enforcement domains-->
+			<element maxOccurs="1" minOccurs="0" name="orchestrationRequirements" type="ITResource:OrchestrationRequirements"/>
+      <element maxOccurs="1" minOccurs="0" name="enforcementRequirements" type="ITResource:EnforcementRequirements"/>
+		</sequence>
+		<attribute name="id" type="string"/>
+		<attribute name="orchestrationID" type="string"/>
+    <attribute name="tenantID" type="string"/>
+		<attribute name="sliceID" type="string"/>
+	</complexType>
+	
+		<complexType name="OrchestrationRequirements">
+		<sequence>
+			<element name="latency" type="integer" minOccurs="0" maxOccurs="unbounded"/>
+			<element name="algorithm" type="string" minOccurs="0" maxOccurs="unbounded"/>
+		</sequence>
+	</complexType>
+	
+		<complexType name="EnforcementRequirements">
+		<sequence>
+			<element name="enforcementDomains" type="ITResource:EnforcementDomains" minOccurs="1" maxOccurs="1"/>
+		</sequence>
+	</complexType>
+	
+			<complexType name="EnforcementDomains">
+		<sequence>
+			<element name="domainID" type="string" minOccurs="1"	maxOccurs="unbounded"/>
+		</sequence>
+	</complexType>
+	
+	<complexType name="Dependencies">
+		<sequence>
+			<element name="dependency" type="ITResource:Dependency" minOccurs="1"
+				maxOccurs="unbounded"/>
+		</sequence>
+	</complexType>
+
+	<complexType name="Dependency"> </complexType>
+
+
+	<complexType name="PolicyDependency">
+		<complexContent>
+			<extension base="ITResource:Dependency">
+				<sequence>
+					<element name="configurationCondition"
+						type="ITResource:PolicyDependencyCondition"/>
+				</sequence>
+			</extension>
+		</complexContent>
+	</complexType>
+
+	<complexType name="PolicyDependencyCondition">
+		<complexContent>
+			<extension base="ITResource:ConfigurationCondition">
+				<sequence>
+					<element name="policyID" type="string"/>
+					<element name="status" type="string"/>
+				</sequence>
+			</extension>
+		</complexContent>
+	</complexType>
+
+	<complexType name="EventDependency">
+		<complexContent>
+			<extension base="ITResource:Dependency">
+				<sequence>
+					<element name="eventID" type="string"/>
+					<element name="configurationCondition" type="ITResource:ConfigurationCondition"
+					/>
+				</sequence>
+			</extension>
+		</complexContent>
+	</complexType>
+
+	<complexType name="EnablerCandidates">
+		<sequence>
+			<element name="enabler" type="string" maxOccurs="unbounded"/>
+		</sequence>
+	</complexType>
+
+
+
+	<!-- /ANASTACIA policy for orchestration extension -->
+
+	<complexType name="Configuration">
+		<sequence>
+			<element maxOccurs="unbounded" minOccurs="1" name="capability" type="ITResource:Capability"/>
+		</sequence>
+	</complexType>
+
+	<complexType name="Capability">
+		<sequence>
+			<element maxOccurs="1" minOccurs="1" name="Name" type="ITResource:CapabilityType"/>
+		</sequence>
+	</complexType>
+
+	<complexType name="AuthorizationCapability">
+		<complexContent>
+			<extension base="ITResource:Capability"/>
+		</complexContent>
+	</complexType>
+
+	<complexType name="ChannelAuthorizationCapability">
+		<complexContent>
+			<extension base="ITResource:AuthorizationCapability"/>
+		</complexContent>
+	</complexType>
+
+	<complexType name="FilteringCapability">
+		<complexContent>
+			<extension base="ITResource:ChannelAuthorizationCapability">
+				<sequence>
+					<element maxOccurs="1" minOccurs="1" name="stateful" type="boolean"/>
+					<element maxOccurs="1" minOccurs="1" name="applicationLayerFiltering" type="boolean"/>
+					<element maxOccurs="1" minOccurs="1" name="httpFiltering" type="boolean"> </element>
+					<element maxOccurs="1" minOccurs="1" name="contentInspection" type="boolean">
+					</element>
+				</sequence>
+			</extension>
+		</complexContent>
+	</complexType>
+
+	<complexType name="TargetAuthzCapability">
+		<complexContent>
+			<extension base="ITResource:AuthorizationCapability"/>
+		</complexContent>
+	</complexType>
+
+	<complexType name="AuthzEnforcementCapability">
+		<complexContent>
+			<extension base="ITResource:TargetAuthzCapability"/>
+		</complexContent>
+	</complexType>
+
+	<complexType name="AuthzDecisionCapabiliy">
+		<complexContent>
+			<extension base="ITResource:TargetAuthzCapability"/>
+		</complexContent>
+	</complexType>
+
+	<complexType name="AuthenticationCapability">
+		<complexContent>
+			<extension base="ITResource:Capability"/>
+		</complexContent>
+	</complexType>
+
+	<complexType name="AuthcEnforcementCapability">
+		<complexContent>
+			<extension base="ITResource:AuthenticationCapability"/>
+		</complexContent>
+	</complexType>
+
+	<complexType name="AuthcDecisionCapability">
+		<complexContent>
+			<extension base="ITResource:AuthenticationCapability">
+				<sequence>
+					<element maxOccurs="1" minOccurs="1" name="authenticationMethods" type="string">
+					</element>
+				</sequence>
+			</extension>
+		</complexContent>
+	</complexType>
+
+	<complexType name="TrafficAnalysisCapability">
+		<complexContent>
+			<extension base="ITResource:Capability">
+				<sequence>
+					<element maxOccurs="1" minOccurs="1" name="supportOnlineTraficAnalysis" type="boolean"/>
+					<element maxOccurs="1" minOccurs="1" name="supportOfflineTraficAnalysis" type="boolean"/>
+				</sequence>
+			</extension>
+		</complexContent>
+	</complexType>
+
+	<complexType name="IDSCapability">
+		<complexContent>
+			<extension base="ITResource:TrafficAnalysisCapability"/>
+		</complexContent>
+	</complexType>
+
+	<complexType name="IPSCapability">
+		<complexContent>
+			<extension base="ITResource:TrafficAnalysisCapability"/>
+		</complexContent>
+	</complexType>
+
+	<complexType name="MalwaresAnalysisCapability">
+		<complexContent>
+			<extension base="ITResource:TrafficAnalysisCapability"/>
+		</complexContent>
+	</complexType>
+
+	<complexType name="MaliciousFileAnalysisCapability">
+		<complexContent>
+			<extension base="ITResource:MalwaresAnalysisCapability">
+				<sequence>
+					<element maxOccurs="1" minOccurs="1" name="fileType" type="string"/>
+				</sequence>
+			</extension>
+		</complexContent>
+	</complexType>
+
+
+	<complexType name="LawfulInterceptionCapability">
+		<complexContent>
+			<extension base="ITResource:TrafficAnalysisCapability">
+				<sequence>
+					<element maxOccurs="unbounded" minOccurs="1" name="trafficType" type="string"/>
+					<element maxOccurs="1" minOccurs="1" name="Country" type="string"/>
+				</sequence>
+			</extension>
+		</complexContent>
+	</complexType>
+
+	<complexType name="ResourceScannerCapability">
+		<complexContent>
+			<extension base="ITResource:Capability">
+				<sequence>
+					<element maxOccurs="1" minOccurs="1" name="resourceType" type="string"/>
+				</sequence>
+			</extension>
+		</complexContent>
+	</complexType>
+
+	<complexType name="VulnerabilitiesScannerCapability">
+		<complexContent>
+			<extension base="ITResource:ResourceScannerCapability"/>
+		</complexContent>
+	</complexType>
+
+	<complexType name="BotnetDetectorCapability">
+		<complexContent>
+			<extension base="ITResource:VulnerabilitiesScannerCapability"/>
+		</complexContent>
+	</complexType>
+
+	<complexType name="LoggingCapability">
+		<complexContent>
+			<extension base="ITResource:ResourceScannerCapability"/>
+		</complexContent>
+	</complexType>
+
+	<complexType name="TrafficRecordCapability">
+		<complexContent>
+			<extension base="ITResource:LoggingCapability"/>
+		</complexContent>
+	</complexType>
+
+	<complexType name="DataProtectionCapability">
+		<complexContent>
+			<extension base="ITResource:Capability">
+				<sequence>
+					<element maxOccurs="1" minOccurs="1"
+						name="supportsDataAuthenticationAndIntegrity" type="boolean"/>
+					<element maxOccurs="1" minOccurs="1" name="supportsDigitalSignature"
+						type="boolean"/>
+					<element maxOccurs="1" minOccurs="1" name="supportsEncryption" type="boolean"> </element>
+					<element maxOccurs="1" minOccurs="1" name="supportsKeyExchange" type="boolean"/>
+				</sequence>
+			</extension>
+		</complexContent>
+	</complexType>
+
+	<complexType name="EncryptionCapability">
+		<complexContent>
+			<extension base="ITResource:DataProtectionCapability"/>
+		</complexContent>
+	</complexType>
+
+	<complexType name="IdentityProtectionCapability">
+		<complexContent>
+			<extension base="ITResource:Capability"/>
+		</complexContent>
+	</complexType>
+
+	<complexType name="AnonimizerCapability">
+		<complexContent>
+			<extension base="ITResource:IdentityProtectionCapability"/>
+		</complexContent>
+	</complexType>
+
+	<complexType name="AddressTranslationCapability">
+		<complexContent>
+			<extension base="ITResource:Capability"/>
+		</complexContent>
+	</complexType>
+
+	<complexType name="ForwardProxyCapabiity">
+		<complexContent>
+			<extension base="ITResource:AddressTranslationCapability"/>
+		</complexContent>
+	</complexType>
+
+
+	<complexType name="NattingCapability">
+		<complexContent>
+			<extension base="ITResource:ForwardProxyCapabiity"/>
+		</complexContent>
+	</complexType>
+
+	<complexType name="ReverseProxyCapabiity">
+		<complexContent>
+			<extension base="ITResource:AddressTranslationCapability"/>
+		</complexContent>
+	</complexType>
+
+	<complexType name="URLRewritingCapability">
+		<complexContent>
+			<extension base="ITResource:ReverseProxyCapabiity"/>
+		</complexContent>
+	</complexType>
+
+	<complexType name="RoutingCapability">
+		<complexContent>
+			<extension base="ITResource:Capability"/>
+		</complexContent>
+	</complexType>
+	
+	<!-- INSPIRE-5GPlus 5GServiceSecuritySlice-->
+	
+	<complexType name="FiveGSecuritySlice">
+		<complexContent>
+			<extension base="ITResource:Capability">
+				<sequence>
+					<element maxOccurs="1" minOccurs="1" name="sliceID" type="integer"/>
+				</sequence>
+			</extension>
+		</complexContent>
+	</complexType>	
+	
+		<complexType name="FiveGSecuredService">
+		<complexContent>
+			<extension base="ITResource:Capability"/>
+		</complexContent>
+	</complexType>
+	
+
+	<complexType name="RuleSetConfiguration">
+		<complexContent>
+			<extension base="ITResource:Configuration">
+				<sequence>
+					<element maxOccurs="1" minOccurs="0" name="defaultAction"
+						type="ITResource:ConfigurationAction"/>
+					<element maxOccurs="unbounded" minOccurs="0" name="configurationRule"
+						type="ITResource:ConfigurationRule"> </element>
+					<element maxOccurs="unbounded" minOccurs="0" name="NetworkSlicingConditionParameters"
+						type="ITResource:NetworkSlicingConditionParameters"> </element>
+					<element maxOccurs="1" minOccurs="0" name="resolutionStrategy"
+						type="ITResource:ResolutionStrategy"> </element>
+					<element maxOccurs="1" minOccurs="1" name="Name" type="string"/>
+				</sequence>
+			</extension>
+		</complexContent>
+	</complexType>
+	<complexType name="ConfigurationAction"> </complexType>
+
+	<complexType name="ConfigurationRule">
+		<sequence>
+			<element maxOccurs="1" minOccurs="1" name="configurationRuleAction"
+				type="ITResource:ConfigurationAction"> </element>
+			<element maxOccurs="1" minOccurs="1" name="configurationCondition"
+				type="ITResource:ConfigurationCondition"> </element>
+			<element maxOccurs="1" minOccurs="0" name="externalData" type="ITResource:ExternalData"> </element>
+			<element maxOccurs="1" minOccurs="1" name="Name" type="string"> </element>
+			<element maxOccurs="1" minOccurs="1" name="isCNF" type="boolean"> </element>
+			<element name="HSPL" type="ITResource:HSPL" maxOccurs="unbounded" minOccurs="0"/>
+		</sequence>
+
+
+	</complexType>
+	<complexType name="ConfigurationCondition">
+		<sequence>
+			<element maxOccurs="1" minOccurs="1" name="isCNF" type="boolean"/>
+		</sequence>
+	</complexType>
+
+
+	<complexType name="ExternalData"> </complexType>
+
+	<complexType name="Priority">
+		<complexContent>
+			<extension base="ITResource:ExternalData">
+				<sequence>
+					<element maxOccurs="1" minOccurs="1" name="value" type="integer"/>
+				</sequence>
+			</extension>
+		</complexContent>
+	</complexType>
+
+	<complexType name="ResolutionStrategy">
+		<sequence>
+			<element maxOccurs="unbounded" minOccurs="0" name="externalData"
+				type="ITResource:ExternalData"/>
+		</sequence>
+	</complexType>
+
+	<complexType name="FMR">
+		<complexContent>
+			<extension base="ITResource:ResolutionStrategy"/>
+		</complexContent>
+	</complexType>
+
+	<complexType name="DTP">
+		<complexContent>
+			<extension base="ITResource:ResolutionStrategy"/>
+		</complexContent>
+	</complexType>
+
+	<complexType name="ATP">
+		<complexContent>
+			<extension base="ITResource:ResolutionStrategy"/>
+		</complexContent>
+	</complexType>
+
+	<complexType name="MSTP">
+		<complexContent>
+			<extension base="ITResource:ResolutionStrategy"/>
+		</complexContent>
+	</complexType>
+
+	<complexType name="LSTP">
+		<complexContent>
+			<extension base="ITResource:ResolutionStrategy"/>
+		</complexContent>
+	</complexType>
+
+	<complexType name="ALL">
+		<complexContent>
+			<extension base="ITResource:ResolutionStrategy"/>
+		</complexContent>
+	</complexType>
+
+	<!-- INSPIRE-5GPlus 5GServiceSecuritySlice Actions and condition-->
+
+	<complexType name="FiveGSecuritySliceCondition">
+		<complexContent>
+			<extension base="ITResource:ConfigurationCondition">
+				<sequence>
+					<element maxOccurs="unbounded" minOccurs="1" name="securedService" type="ITResource:SecuredService"/>
+				</sequence>
+			</extension>
+		</complexContent>
+	</complexType>
+	
+
+    <complexType name="SecuredService">
+				<sequence>
+          <element maxOccurs="1" minOccurs="1" name="service" type="ITResource:Service"/>
+          <element maxOccurs="1" minOccurs="0" name="securityRequirements" type="ITResource:SSLALink"/>
+          <element maxOccurs="1" minOccurs="0" name="securityPolicies" type="ITResource:MSPLLink"/>
+				</sequence>
+	</complexType>	
+	
+	    <complexType name="Service">
+				<sequence>
+          <element maxOccurs="1" minOccurs="0" name="name" type="string"/>
+          <element maxOccurs="1" minOccurs="0" name="type" type="ITResource:ServiceType"/>
+          <element maxOccurs="1" minOccurs="0" name="image" type="string"/>
+          <element maxOccurs="1" minOccurs="0" name="flavor" type="string"/>
+          <element maxOccurs="1" minOccurs="0" name="msplID" type="string"/>
+          <element maxOccurs="1" minOccurs="0" name="domainID" type="string"/>
+				</sequence>
+          <attribute name="id" type="string"/>
+	</complexType>	
+
+	<simpleType name="ServiceType">
+		<restriction base="string">
+			<enumeration value="5GCore"/>
+		</restriction>
+	</simpleType>
+
+
+		<complexType name="SSLALink">
+				<sequence>
+            <element maxOccurs="unbounded" minOccurs="0" name="sloID" type="string"/>
+				</sequence>
+          <attribute name="id" type="string"/>
+	</complexType>	
+	
+		<complexType name="MSPLLink">
+				<sequence>
+            <element maxOccurs="unbounded" minOccurs="0" name="msplID" type="string"/>
+				</sequence>
+	</complexType>		
+	
+	    <complexType name="NEST">
+				<sequence>
+          <element maxOccurs="1" minOccurs="0" name="availability" type="float"/>
+          <element maxOccurs="1" minOccurs="0" name="mmtel_support" type="int"/>
+          <element maxOccurs="1" minOccurs="0" name="session_and_service_continuity_support" type="int"/>
+          <element maxOccurs="1" minOccurs="0" name="three_gpp_5g_qos" type="int"/>
+				</sequence>
+	</complexType>	
+	
+	<complexType name="FiveGSecuritySliceAction">
+		<complexContent>
+		<extension base="ITResource:ConfigurationAction">
+				<sequence>
+					<element name="fiveGSecuritySliceActionType" type="ITResource:FiveGSecuritySliceActionType"/>
+          <element maxOccurs="unbounded" minOccurs="1" name="securedService" type="ITResource:SecuredService"/>
+          <element maxOccurs="1" minOccurs="0" name="nest" type="ITResource:NEST"/>
+				</sequence>
+				</extension>
+		</complexContent>
+	</complexType>
+
+	<simpleType name="FiveGSecuritySliceActionType">
+		<restriction base="string">
+			<enumeration value="DEPLOY"/>
+			<enumeration value="UPDATE"/>
+			<enumeration value="REMOVE"/>
+		</restriction>
+	</simpleType>
+
+<!--  INSPIRE 5G Secured Service Policy -->
+		<complexType name="FiveGSecuredServiceAction">
+		<complexContent>
+			<extension base="ITResource:ConfigurationAction">
+				<sequence>
+					<element name="fiveGSecuredServiceActionType" type="ITResource:FiveGSecuritySliceActionType"/>
+          <element name="securedService" type="ITResource:SecuredService"/>
+				</sequence>
+			</extension>
+		</complexContent>
+	</complexType>
+	
+	<complexType name="DataProtectionCondition">
+		<complexContent>
+			<extension base="ITResource:ConfigurationCondition">
+				<sequence>
+					<element maxOccurs="1" minOccurs="0" name="packetFilterCondition"
+						type="ITResource:PacketFilterCondition"/>
+				</sequence>
+			</extension>
+		</complexContent>
+	</complexType>
+
+	<complexType name="PurposeCondition">
+		<complexContent>
+			<extension base="ITResource:ConfigurationCondition">
+				<sequence>
+					<element name="PurposeCondition" type="ITResource:PurposeConditionType"
+						maxOccurs="unbounded" minOccurs="0"/>
+				</sequence>
+			</extension>
+		</complexContent>
+	</complexType>
+
+	<!-- ANASTACIA Privacy -->
+	<complexType name="PrivacyConfigurationCondition">
+		<complexContent>
+			<extension base="ITResource:FilteringConfigurationCondition">
+				<sequence>
+					<element name="Subject" type="string" minOccurs="0"/>
+					<element name="Target" type="string" minOccurs="0"/>
+				</sequence>
+			</extension>
+		</complexContent>
+	</complexType>
+
+	<complexType name="PrivacyAction">
+		<complexContent>
+			<extension base="ITResource:ConfigurationAction">
+				<sequence>
+					<element name="PrivacyActionType" type="ITResource:PrivacyActionType"
+						minOccurs="1"/>
+					<element name="PrivacyMethod" type="ITResource:PrivacyMethod" minOccurs="1"/>
+				</sequence>
+			</extension>
+		</complexContent>
+	</complexType>
+
+	<complexType name="PrivacyMethod"> </complexType>
+
+	<complexType name="PrivacyIBMethod">
+		<complexContent>
+			<extension base="ITResource:PrivacyMethod">
+				<sequence>
+					<element name="IB" type="string"/>
+				</sequence>
+			</extension>
+		</complexContent>
+	</complexType>
+
+	<complexType name="PrivacyABMethod">
+		<complexContent>
+			<extension base="ITResource:PrivacyMethod">
+				<sequence>
+					<element name="attribute" type="ITResource:KeyValue" maxOccurs="unbounded"/>
+				</sequence>
+			</extension>
+		</complexContent>
+	</complexType>
+
+	<complexType name="PrivacyPKIMethod">
+		<complexContent>
+			<extension base="ITResource:PrivacyMethod">
+				<sequence>
+					<element name="pkiParameters" type="ITResource:AuthenticationParameters"/>
+				</sequence>
+			</extension>
+		</complexContent>
+	</complexType>
+
+
+	<complexType name="KeyValue">
+		<sequence>
+			<element name="key" type="string"/>
+			<element name="value" type="string"/>
+		</sequence>
+	</complexType>
+
+
+	<simpleType name="PrivacyActionType">
+		<restriction base="string">
+			<enumeration value="DATA"/>
+		</restriction>
+	</simpleType>
+
+	<!-- ANASTACIA Data aggregation -->
+	<complexType name="DataAgreggationConfigurationConditions">
+		<complexContent>
+			<extension base="ITResource:ConfigurationCondition">
+				<sequence>
+					<element maxOccurs="unbounded" minOccurs="1"
+						name="dataAggregationConfigurationCondition"
+						type="ITResource:DataAggregationConfigurationCondition"/>
+				</sequence>
+			</extension>
+		</complexContent>
+	</complexType>
+
+	<complexType name="DataAggregationConfigurationCondition">
+		<complexContent>
+			<extension base="ITResource:FilteringConfigurationCondition"> </extension>
+		</complexContent>
+	</complexType>
+
+	<complexType name="DataAggregationAction">
+		<complexContent>
+			<extension base="ITResource:ConfigurationAction">
+				<sequence>
+					<element maxOccurs="unbounded" name="dataAggregationActionType"
+						type="ITResource:DataAggregationActionType"/>
+					<element name="aditionalRuleParameters" type="ITResource:KeyValue" minOccurs="0"
+						maxOccurs="unbounded"/>
+				</sequence>
+			</extension>
+		</complexContent>
+	</complexType>
+
+	<simpleType name="DataAggregationActionType">
+		<restriction base="string">
+			<enumeration value="SIMPLE_AGGREGATION"/>
+		</restriction>
+	</simpleType>
+
+	<!-- ANASTACIA Anonymity -->
+
+	<complexType name="AnonymityConfigurationCondition">
+		<complexContent>
+			<extension base="ITResource:FilteringConfigurationCondition"> </extension>
+		</complexContent>
+	</complexType>
+
+
+	<complexType name="AnonymityAction">
+		<complexContent>
+			<extension base="ITResource:ConfigurationAction">
+				<sequence>
+					<element maxOccurs="unbounded" name="anonymityActionType"
+						type="ITResource:AnonymityActionType"/>
+					<element maxOccurs="1" minOccurs="0" name="anonymityTarget"
+						type="ITResource:AnonymityConfigurationCondition"/>
+					<element maxOccurs="1" minOccurs="0" name="anonymityTechnologyParameters"
+						type="ITResource:AnonymityTechnologyParameter"/>
+					<element name="aditionalAnonymityParameters" type="ITResource:KeyValue"
+						minOccurs="0" maxOccurs="unbounded"/>
+				</sequence>
+			</extension>
+		</complexContent>
+	</complexType>
+
+	<simpleType name="AnonymityActionType">
+		<restriction base="string">
+			<enumeration value="SENDER"/>
+			<enumeration value="RECEIVER"/>
+			<enumeration value="COMMUNICATION"/>
+		</restriction>
+	</simpleType>
+
+	<complexType name="AnonymityTechnologyParameter">
+		<complexContent>
+			<extension base="ITResource:TechnologySpecificParameters">
+				<sequence> </sequence>
+			</extension>
+		</complexContent>
+	</complexType>
+
+	<complexType name="OnionRoutingTechnologyParameter">
+		<complexContent>
+			<extension base="ITResource:AnonymityTechnologyParameter">
+				<sequence>
+					<element name="exitRelay" type="boolean"/>
+					<element name="IPv6Exit" type="boolean"/>
+					<element name="publicRelay" type="boolean"/>
+					<element name="hiddenServiceDir" type="string"/>
+					<element name="hiddenServicePort" type="string"/>
+					<element name="relayBandwidthRate" type="integer"/>
+					<element name="relayBandwidthBurst" type="integer"/>
+				</sequence>
+			</extension>
+		</complexContent>
+	</complexType>
+
+	<complexType name="TrafficMIXERTechnologyParameter">
+		<complexContent>
+			<extension base="ITResource:TechnologySpecificParameters">
+				<sequence>
+					<element name="GW" type="string"/>
+					<element name="peerID" type="string"/>
+					<element name="key" type="string"/>
+					<element name="cryptoBackend" type="string"/>
+				</sequence>
+			</extension>
+		</complexContent>
+	</complexType>
+
+
+	<!-- ANASTACIA Monitoring -->
+	<complexType name="MonitoringConfigurationConditions">
+		<complexContent>
+			<extension base="ITResource:ConfigurationCondition">
+				<sequence>
+					<element maxOccurs="unbounded" minOccurs="1"
+						name="monitoringConfigurationCondition"
+						type="ITResource:MonitoringConfigurationCondition"/>
+				</sequence>
+			</extension>
+		</complexContent>
+	</complexType>
+
+<!-- Custom for inspire -->
+	<complexType name="MonitoringConfigurationCondition">
+		<complexContent>
+			<extension base="ITResource:FilteringConfigurationCondition">
+				<sequence>
+					<!--<element maxOccurs="1" minOccurs="0" name="SignatureList" type="ITResource:SignatureList"></element>-->
+					
+					<element maxOccurs="1" minOccurs="0" name="detectionFilter" type="string"/>
+					<element maxOccurs="1" minOccurs="0" name="channelProtected" type="boolean"/>
+					<element maxOccurs="1" minOccurs="0" name="signatureList" type="ITResource:SignatureList"/>
+					<element maxOccurs="unbounded" minOccurs="0" name="maxCount" type="ITResource:Counts"/>
+					<element maxOccurs="unbounded" minOccurs="0" name="minCount" type="ITResource:Counts"/>
+				</sequence>
+			</extension>
+		</complexContent>
+	</complexType>
+	
+
+<!--INSPIRE 5GPlus counters-->
+	<complexType name="Counts">
+		<sequence>
+       <element maxOccurs="1" minOccurs="1" name="isCNF" type="boolean"> </element>
+      <element minOccurs="1" name="count" type="ITResource:Count" maxOccurs="unbounded"/>
+		</sequence>
+	</complexType>
+
+
+	<complexType name="Count">
+		<sequence>
+      <element minOccurs="1" name="measureUnit" type="ITResource:MeasureUnit" maxOccurs="1"/>
+			<element minOccurs="0" name="timeUnit" type="ITResource:TimeUnit" maxOccurs="1"/>
+			<element minOccurs="1" name="value" type="string" maxOccurs="1"/>
+  		<element minOccurs="0" name="per" type="ITResource:TimeUnit" maxOccurs="1"/>
+		</sequence>
+	</complexType>
+	
+	<simpleType name="MeasureUnit">
+		<restriction base="string">
+			<enumeration value="MESSAGE"/>
+			<enumeration value="DATAGRAM"/>
+			<enumeration value="CONNECTION"/>
+						<enumeration value="CONNECTION_DURATION"/>
+			<enumeration value="BYTE"/>
+			<enumeration value="KBYTE"/>
+			<enumeration value="MBYTE"/>
+			<enumeration value="GBYTE"/>
+			<enumeration value="TBYTE"/>
+			<enumeration value="PBYTE"/>
+		</restriction>
+	</simpleType>
+	
+		<simpleType name="TimeUnit">
+		<restriction base="string">
+			<enumeration value="SECOND"/>
+			<enumeration value="MINUTE"/>
+			<enumeration value="HOUR"/>
+			<enumeration value="DAY"/>
+			<enumeration value="WEEK"/>
+			<enumeration value="MONTH"/>
+			<enumeration value="YEAR"/>
+		</restriction>
+	</simpleType>
+	
+
+	<complexType name="SignatureList">
+		<sequence>
+			<element minOccurs="0" name="signature" type="string" maxOccurs="unbounded"/>
+		</sequence>
+	</complexType>
+
+	<complexType name="MonitoringAction">
+		<complexContent>
+			<extension base="ITResource:ConfigurationAction">
+				<sequence>
+					<element maxOccurs="unbounded" name="monitoringActionType" type="ITResource:MonitoringActionType"/>
+					<element maxOccurs="1" minOccurs="0" name="ProbeID" type="string"/>
+					<element name="reportPeriodicity" type="integer" minOccurs="0"/>
+					<element name="reportPerFlow" type="boolean" minOccurs="0"/>
+					<element maxOccurs="1" minOccurs="0" name="ruleID" type="string"/>
+					<element maxOccurs="1" minOccurs="0" name="count" type="string"/>
+					<element name="aditionalMonitoringParameters" type="ITResource:KeyValue"
+						minOccurs="0" maxOccurs="unbounded"/>
+				</sequence>
+			</extension>
+		</complexContent>
+	</complexType>
+
+	<simpleType name="MonitoringActionType">
+		<restriction base="string">
+      <enumeration value="ALERT"></enumeration>
+			<enumeration value="SECURITY_ANALYSIS"/>
+			<enumeration value="ENABLE_SESS_STATS"/>
+			<enumeration value="ENABLE_NO_SESS_STATS"/>
+			<!-- Action Type for UTRC Monitoring Agent -->
+			<enumeration value="BEHAVIORAL"/>
+		</restriction>
+	</simpleType>
+
+	<!-- ANASTACIA Network slicing -->
+
+<complexType name="NetworkSlicingConfigurationCondition">
+		<complexContent>
+			<extension base="ITResource:NetworkSlicingCondition">
+				<sequence>
+					<element maxOccurs="1" minOccurs="0" name="networkSlicingCondition"
+						type="ITResource:NetworkSlicingCondition"/>
+				</sequence>
+			</extension>
+		</complexContent>
+	</complexType>
+
+	<complexType name="NetworkSlicingCondition">
+		<complexContent>
+			<extension base="ITResource:ConfigurationCondition">
+				<sequence>
+					<element maxOccurs="1" minOccurs="0" name="qosCondition" type="ITResource:QoSCondition"/>
+					<element maxOccurs="1" minOccurs="0" name="packetFilterCondition" type="ITResource:PacketFilterCondition"/>
+					<element maxOccurs="1" minOccurs="0" name="networkSlicingConditionParameters" type="ITResource:NetworkSlicingConditionParameters"/>
+				</sequence>
+			</extension>
+		</complexContent>
+	</complexType>
+
+
+	<complexType name="NetworkSlicingAction">
+		<complexContent>
+			<extension base="ITResource:ConfigurationAction">
+				<sequence>
+					<element maxOccurs="1" minOccurs="0" name="NetworkSlicingActionType" type="ITResource:NetworkSlicingActionType"/>
+					<element maxOccurs="1" minOccurs="0" name="networkSlicingConditionParameters" type="ITResource:NetworkSlicingConfigurationCondition"/>
+				</sequence>
+			</extension>
+		</complexContent>
+	</complexType>
+
+
+	<complexType name="NetworkSlicingConditionParameters">
+		<complexContent>
+			<extension base="ITResource:ConfigurationCondition">
+				<sequence>
+					<element maxOccurs="1" minOccurs="0" name="SliceID" type="string"/>
+					<element maxOccurs="1" minOccurs="1" name="SliceName" type="string"/>
+					<element maxOccurs="1" minOccurs="0" name="point" type="ITResource:Point"/>
+				</sequence>
+			</extension>
+		</complexContent>
+	</complexType>
+
+	<complexType name="Point">
+		<complexContent>
+			<extension base="ITResource:ConfigurationCondition">
+				<sequence>
+					<element maxOccurs="unbounded" minOccurs="0" name="dpid" type="string"/>
+				</sequence>
+			</extension>
+		</complexContent>
+	</complexType>
+
+	<simpleType name="NetworkSlicingActionType">
+		<restriction base="string">
+			<enumeration value="CREATE"/>
+			<enumeration value="ATTACH"/>
+		</restriction>
+	</simpleType>
+
+
+	<!-- Firewall -->  
+
+	<complexType name="FirewallRuleAction">
+		<complexContent>
+			<extension base="ITResource:ConfigurationAction">
+				<sequence>
+					<element maxOccurs="1" minOccurs="0" name="firewallActionType"
+						type="ITResource:FirewallActionType"/>
+					
+					<element maxOccurs="1" minOccurs="0" name="ruleParameters"
+						type="ITResource:FirewallConfigurationCondition"/>
+				</sequence>
+			</extension>
+		</complexContent>
+	</complexType>
+
+	<simpleType name="FirewallActionType">
+		<restriction base="string">
+			<enumeration value="DROP"/>
+			<enumeration value="FORWARD"/>
+		</restriction>
+	</simpleType>
+
+	<complexType name="FirewallConfigurationCondition">
+		<complexContent>
+			<extension base="ITResource:ParametersFirewallConfigurationCondition"> </extension>
+		</complexContent>
+	</complexType>
+
+	<complexType name="ParametersFirewallConfigurationCondition">
+		<complexContent>
+			<extension base="ITResource:ConfigurationCondition">
+				<sequence>
+					<element maxOccurs="1" minOccurs="0" name="ruleParameters"
+						type="ITResource:RuleParameters"/>
+				</sequence>
+			</extension>
+		</complexContent>
+	</complexType>
+
+	<complexType name="RuleParameters">
+		<complexContent>
+			<extension base="ITResource:ConfigurationCondition">
+				<sequence>
+					<element maxOccurs="1" minOccurs="0" name="destinationAddress" type="string"/>
+					<element maxOccurs="1" minOccurs="0" name="action" type="string"/>
+					<element maxOccurs="1" minOccurs="0" name="sourceAddress" type="string"/>
+					<element maxOccurs="1" minOccurs="0" name="name" type="string"/>
+				</sequence>
+			</extension>
+		</complexContent>
+	</complexType>
+
+
+	<!-- FL -->
+
+	<complexType name="FLConfigurationCondition">
+		<complexContent>
+			<extension base="ITResource:FilterFLConfigurationCondition"> </extension>
+		</complexContent>
+	</complexType>
+
+	<complexType name="FilterFLConfigurationCondition">
+		<complexContent>
+			<extension base="ITResource:ConfigurationCondition">
+				<sequence>
+					<element maxOccurs="1" minOccurs="0" name="instanceThreshold" type="integer"/>
+					<element maxOccurs="1" minOccurs="0" name="aggregatorParameters"
+						type="ITResource:AggregatorParameters"/>
+					<element maxOccurs="1" minOccurs="0" name="localConnectionParameters"
+						type="ITResource:LocalConnectionParameters"/>
+					<element maxOccurs="1" minOccurs="0" name="integrationFabricParameters"
+						type="ITResource:IntegrationFabricParameters"/>
+					<element maxOccurs="1" minOccurs="0" name="learningModelInfo"
+						type="ITResource:LearningModelInfo"/>
+					<element maxOccurs="1" minOccurs="0" name="learningParameters"
+						type="ITResource:LearningParameters"/>
+					<element maxOccurs="1" minOccurs="0" name="obfuscationInfo"
+						type="ITResource:ObfuscationInfo"/>
+				</sequence>
+			</extension>
+		</complexContent>
+	</complexType>
+
+	<complexType name="FederatedLearningRuleAction">
+		<complexContent>
+			<extension base="ITResource:ConfigurationAction">
+				<sequence>
+					<element maxOccurs="1" minOccurs="0" name="federationLearnigActionType"
+						type="ITResource:FederationLearnigActionType"/>
+					<element maxOccurs="1" minOccurs="0" name="aggregatorParameters"
+						type="ITResource:FLConfigurationCondition"/>
+					<element maxOccurs="1" minOccurs="0" name="localConnectionParameters"
+						type="ITResource:FLConfigurationCondition"/>
+					<element maxOccurs="1" minOccurs="0" name="integrationFabricParameters"
+						type="ITResource:FLConfigurationCondition"/>
+					<element maxOccurs="1" minOccurs="0" name="learningModelInfo"
+						type="ITResource:FLConfigurationCondition"/>
+					<element maxOccurs="1" minOccurs="0" name="learningParameters"
+						type="ITResource:FLConfigurationCondition"/>
+					<element maxOccurs="1" minOccurs="0" name="obfuscationInfo"
+						type="ITResource:FLConfigurationCondition"/>
+				</sequence>
+			</extension>
+		</complexContent>
+	</complexType>
+
+	<simpleType name="FederationLearnigActionType">
+		<restriction base="string">
+			<enumeration value="AGGREGATOR"/>
+			<enumeration value="DETECTION"/>
+			<enumeration value="AGENT"/>
+		</restriction>
+	</simpleType>
+
+	<complexType name="AggregatorParameters">
+		<complexContent>
+			<extension base="ITResource:ConfigurationCondition">
+				<sequence>
+					<element maxOccurs="1" minOccurs="0" name="URL" type="string"/>
+					<element maxOccurs="1" minOccurs="0" name="rounds" type="integer"/>
+					<element maxOccurs="1" minOccurs="0" name="fusionAlgorithm" type="string"/>
+					<element maxOccurs="1" minOccurs="0" name="apiPort" type="string"/>
+					<element maxOccurs="1" minOccurs="0" name="minClients" type="string"/>
+				</sequence>
+			</extension>
+		</complexContent>
+	</complexType>
+
+	<complexType name="LocalConnectionParameters">
+		<complexContent>
+			<extension base="ITResource:ConfigurationCondition">
+				<sequence>
+					<element maxOccurs="1" minOccurs="0" name="apiPort" type="string"/>
+				</sequence>
+			</extension>
+		</complexContent>
+	</complexType>
+
+	<complexType name="LearningParameters">
+		<complexContent>
+			<extension base="ITResource:ConfigurationCondition">
+				<sequence>
+					<element maxOccurs="1" minOccurs="0" name="testSize" type="string"/>
+					<element maxOccurs="1" minOccurs="0" name="localEpochs" type="string"/>
+					<element maxOccurs="1" minOccurs="0" name="batchSize" type="string"/>
+					<element maxOccurs="1" minOccurs="0" name="stepsPerEpoch" type="string"/>
+				</sequence>
+			</extension>
+		</complexContent>
+	</complexType>
+
+	<complexType name="ObfuscationInfo">
+		<complexContent>
+			<extension base="ITResource:ConfigurationCondition">
+				<sequence>
+					<element maxOccurs="1" minOccurs="0" name="technique" type="string"/>
+					<element maxOccurs="1" minOccurs="0" name="parameters" type="ITResource:Parameters"/>
+				</sequence>
+			</extension>
+		</complexContent>
+	</complexType>
+
+	<complexType name="Parameters">
+		<complexContent>
+			<extension base="ITResource:ConfigurationCondition">
+				<sequence>
+					<element maxOccurs="1" minOccurs="0" name="mechanism" type="string"/>
+					<element maxOccurs="unbounded" minOccurs="0" name="additionalParameters" type="ITResource:AdditionalParameters"/>
+				</sequence>
+			</extension>
+		</complexContent>
+	</complexType>
+
+
+	<complexType name="LearningModelInfo">
+		<complexContent>
+			<extension base="ITResource:ConfigurationCondition">
+				<sequence>
+					<element maxOccurs="1" minOccurs="0" name="learningType" type="string"/>
+					<element maxOccurs="1" minOccurs="0" name="modelParameters" type="ITResource:ModelParameters"/>
+				</sequence>
+			</extension>
+		</complexContent>
+	</complexType>
+
+	<complexType name="ModelParameters">
+		<complexContent>
+			<extension base="ITResource:ConfigurationCondition">
+				<sequence>
+					<element maxOccurs="1" minOccurs="0" name="type" type="string"/>
+					<element maxOccurs="1" minOccurs="0" name="subtype" type="string"/>
+					<element maxOccurs="unbounded" minOccurs="0" name="additionalParameters" type="ITResource:AdditionalParameters"/>
+				</sequence>
+			</extension>
+		</complexContent>
+	</complexType>
+
+	<complexType name="AdditionalParameters">
+		<complexContent>
+			<extension base="ITResource:ConfigurationCondition">
+				<sequence>
+					<element maxOccurs="1" minOccurs="0" name="encoderLayers" type="string"/>
+					<element maxOccurs="1" minOccurs="0" name="decoderLayers" type="string"/>
+					<element maxOccurs="1" minOccurs="0" name="encoderNeurons" type="string"/>
+					<element maxOccurs="1" minOccurs="0" name="decoderNeurons" type="string"/>
+					<element maxOccurs="1" minOccurs="0" name="codeNeurons" type="string"/>
+					<element maxOccurs="1" minOccurs="0" name="lossFunction" type="string"/>
+					<element maxOccurs="1" minOccurs="0" name="epsilon" type="string"/>
+					<element maxOccurs="1" minOccurs="0" name="delta" type="string"/>
+				</sequence>
+			</extension>
+		</complexContent>
+	</complexType>
+
+	<complexType name="IntegrationFabricParameters">
+		<complexContent>
+			<extension base="ITResource:ConfigurationCondition">
+				<sequence>
+					<element maxOccurs="1" minOccurs="0" name="URL" type="string"/>
+					<element maxOccurs="1" minOccurs="0" name="topics" type="ITResource:Topics"/>
+				</sequence>
+			</extension>
+		</complexContent>
+	</complexType>
+
+	<complexType name="Topics">
+		<complexContent>
+			<extension base="ITResource:ConfigurationCondition">
+				<sequence>
+					<element maxOccurs="unbounded" minOccurs="0" name="topic" type="ITResource:Topic"/>
+				</sequence>
+			</extension>
+		</complexContent>
+	</complexType>
+
+	<complexType name="Topic">
+	  	<complexContent>
+		    <extension base="ITResource:ConfigurationCondition">
+		      	<sequence>
+		        	<element maxOccurs="1" minOccurs="0" name="purpose" type="string"/>
+		        	<element maxOccurs="1" minOccurs="0" name="name" type="string"/>
+		      	</sequence>
+		    </extension>
+		</complexContent>
+	</complexType>
+
+
+	<!-- ANASTACIA Traffic divert -->
+	<complexType name="TrafficDivertConfigurationCondition">
+		<complexContent>
+			<extension base="ITResource:FilteringConfigurationCondition"> </extension>
+		</complexContent>
+	</complexType>
+
+
+	<!-- ANASTACIA QoS -->
+	<complexType name="QoSAction">
+		<complexContent>
+			<extension base="ITResource:Configuration">
+				<sequence>
+					<element maxOccurs="1" minOccurs="0" name="qosAction"
+						type="ITResource:QoSCondition"/>
+				</sequence>
+			</extension>
+		</complexContent>
+	</complexType>
+
+
+
+	<complexType name="FilteringConfigurationCondition">
+		<complexContent>
+			<extension base="ITResource:ConfigurationCondition">
+				<sequence>
+					<element maxOccurs="1" minOccurs="0" name="packetFilterCondition"
+						type="ITResource:PacketFilterCondition"/>
+					<element maxOccurs="1" minOccurs="0" name="ICMPCondition"
+						type="ITResource:ICMPCondition"/>
+					<element maxOccurs="1" minOccurs="0" name="statefulCondition"
+						type="ITResource:StatefulCondition"/>
+					<element maxOccurs="1" minOccurs="0" name="timeCondition"
+						type="ITResource:TimeCondition"/>
+					<element maxOccurs="1" minOccurs="0" name="applicationLayerCondition"
+						type="ITResource:ApplicationLayerCondition"/>
+					<element maxOccurs="1" minOccurs="0" name="aggregatorParameters"
+						type="ITResource:AggregatorParameters"/>
+					<element maxOccurs="1" minOccurs="0" name="localConnectionParameters" 
+						type="ITResource:LocalConnectionParameters"/>
+					<!-- ANASTACIA QoS -->
+					<element maxOccurs="1" minOccurs="0" name="qosCondition"
+						type="ITResource:QoSCondition"/>
+					<element maxOccurs="1" minOccurs="0" name="networkSlicingConditionParameters" type="ITResource:NetworkSlicingConditionParameters"/>
+				</sequence>
+			</extension>
+		</complexContent>
+	</complexType>
+
+	<complexType name="ICMPCondition">
+		<sequence>
+			<element maxOccurs="1" minOccurs="0" name="Type" type="string"/>
+		</sequence>
+	</complexType>
+
+	<complexType name="PacketFilterCondition">
+		<sequence>
+			<element maxOccurs="1" minOccurs="0" name="SourceMAC" type="string"/>
+      <element maxOccurs="1" minOccurs="0" name="DestinationMAC" type="string"/>
+			<element maxOccurs="1" minOccurs="0" name="SourceAddress" type="string"/>
+			<element maxOccurs="1" minOccurs="0" name="DestinationAddress" type="string"/>
+			<element maxOccurs="1" minOccurs="0" name="SourcePort" type="string"/>
+			<element maxOccurs="1" minOccurs="0" name="DestinationPort" type="string"/>
+			<element maxOccurs="1" minOccurs="0" name="direction" type="string"/>
+			<element maxOccurs="1" minOccurs="0" name="Size" type="string"/>
+			<element maxOccurs="1" minOccurs="0" name="Interface" type="string"/>
+			<element maxOccurs="1" minOccurs="0" name="ProtocolType" type="string"/>
+			<element maxOccurs="1" minOccurs="0" name="encapsulationType" type="string"/>
+			<element maxOccurs="1" minOccurs="0" name="encapsulationID" type="string"/>
+			<element name="State" type="string" maxOccurs="unbounded" minOccurs="0"/>
+			<element name="bidirectional" type="boolean" maxOccurs="1" minOccurs="0"/>
+      		<element name="encapsulation" type="boolean" maxOccurs="1" minOccurs="0"/>
+      		<element maxOccurs="1" minOccurs="0" name="innerPacket" type="ITResource:PacketFilterCondition"/>
+		</sequence>
+	</complexType>
+
+
+
+	<!-- ANASTACIA QoS FilteringConfigurationCondition -->
+	<complexType name="QoSCondition">
+		<complexContent>
+			<extension base="ITResource:ConfigurationCondition">
+				<sequence>
+					<element name="profile" type="string" minOccurs="0" maxOccurs="1"/>
+					<element name="throughput" type="integer" minOccurs="0" maxOccurs="1"/>
+					<element name="transitDelay" type="integer" minOccurs="0" maxOccurs="1"/>
+					<element name="priority" type="integer" minOccurs="0" maxOccurs="1"/>
+					<element name="errorRate" type="integer" minOccurs="0" maxOccurs="1"/>
+					<element name="resilence" type="integer" minOccurs="0" maxOccurs="1"/>
+					<element maxOccurs="1" minOccurs="1" name="maxBandwidth" type="integer"/>
+					<element maxOccurs="1" minOccurs="1" name="minBandwidth" type="integer"/>
+				</sequence>
+			</extension>
+		</complexContent>
+	</complexType>
+
+
+
+	<!--<element name="applicationLayerCondition" type="ITResource:ApplicationLayerCondition"></element>-->
+	<complexType name="ApplicationLayerCondition">
+		<sequence>
+		 <element maxOccurs="1" minOccurs="0" name="applicationProtocol" type="string"> </element>
+			<element maxOccurs="1" minOccurs="0" name="URL" type="string"> </element>
+			<element maxOccurs="1" minOccurs="0" name="httpCondition"
+				type="ITResource:HTTPCondition"> </element>
+			<element maxOccurs="1" minOccurs="0" name="fileExtension" type="string"> </element>
+			<element maxOccurs="1" minOccurs="0" name="mimeType" type="string"> </element>
+
+			<element name="maxconn" type="int" minOccurs="0" maxOccurs="1"> </element>
+
+			<element name="dst_domain" type="string" minOccurs="0" maxOccurs="1"> </element>
+			<element name="src_domain" type="string" minOccurs="0" maxOccurs="1"> </element>
+
+			<element name="URL_regex" type="string" minOccurs="0" maxOccurs="1"> </element>
+
+		</sequence>
+	</complexType>
+
+	<!-- IoT ApplicationLayerCondition -->
+	<complexType name="IoTApplicationLayerCondition">
+		<complexContent>
+			<extension base="ITResource:ApplicationLayerCondition">
+				<sequence>
+					<element maxOccurs="1" minOccurs="0" name="method" type="string"> </element>
+				</sequence>
+			</extension>
+		</complexContent>
+	</complexType>
+
+
+	<!--<element name="statefulCondition" type="ITResource:StatefulCondition"></element>-->
+	<complexType name="StatefulCondition">
+		<sequence>
+			<element maxOccurs="1" minOccurs="0" name="State" type="string"/>
+			<element maxOccurs="1" minOccurs="0" name="limitRuleHits" type="string"/>
+		</sequence>
+	</complexType>
+	<!--<element name="timeCondition" type="ITResource:TimeCondition"></element>-->
+	<complexType name="TimeCondition">
+		<sequence>
+			<element maxOccurs="1" minOccurs="0" name="TimeZone" type="string"/>
+			<element maxOccurs="1" minOccurs="0" name="Weekday" type="string"/>
+			<element maxOccurs="1" minOccurs="0" name="Time" type="string"/>
+		</sequence>
+	</complexType>
+
+	<complexType name="InterfaceSelectionCondition">
+		<complexContent>
+			<extension base="ITResource:DataProtectionCondition"> </extension>
+		</complexContent>
+	</complexType>
+	<complexType name="DataSelectionCondition">
+		<complexContent>
+			<extension base="ITResource:DataProtectionCondition"> </extension>
+		</complexContent>
+	</complexType>
+	<complexType name="FileSystemCondition">
+		<complexContent>
+			<extension base="ITResource:DataSelectionCondition">
+				<sequence>
+					<element maxOccurs="1" minOccurs="0" name="filename" type="string"/>
+					<element maxOccurs="1" minOccurs="0" name="path" type="string"/>
+				</sequence>
+			</extension>
+		</complexContent>
+	</complexType>
+
+	<complexType name="EventCondition">
+		<sequence>
+			<element name="events" type="string" maxOccurs="1" minOccurs="0"/>
+			<element maxOccurs="1" minOccurs="0" name="interval" type="integer"/>
+			<element name="threshold" type="integer" maxOccurs="1" minOccurs="0"/>
+		</sequence>
+	</complexType>
+
+
+	<complexType name="Anti-malwareCondition">
+		<complexContent>
+			<extension base="ITResource:ConfigurationCondition">
+				<sequence>
+					<element name="fileSystemCondition" type="ITResource:FileSystemCondition"
+						maxOccurs="1" minOccurs="0"/>
+					<element name="applicationLayerCondition"
+						type="ITResource:ApplicationLayerCondition" maxOccurs="1" minOccurs="0"/>
+					<element name="eventCondition" type="ITResource:EventCondition" maxOccurs="1"
+						minOccurs="0"/>
+				</sequence>
+			</extension>
+		</complexContent>
+	</complexType>
+
+	<complexType name="LoggingCondition">
+		<complexContent>
+			<extension base="ITResource:ConfigurationCondition">
+				<sequence>
+					<element name="eventCondition" type="ITResource:EventCondition" maxOccurs="1"
+						minOccurs="0"/>
+
+					<element name="object" type="string" maxOccurs="1" minOccurs="0"> </element>
+
+
+					<element name="packetCondition" type="ITResource:PacketFilterCondition"
+						maxOccurs="unbounded" minOccurs="0"> </element>
+					<element name="applicationCondition" type="ITResource:ApplicationLayerCondition"
+						minOccurs="0" maxOccurs="unbounded"/>
+				</sequence>
+			</extension>
+		</complexContent>
+	</complexType>
+
+
+
+	<complexType name="DBDataSelectionCondition">
+		<complexContent>
+			<extension base="ITResource:DataSelectionCondition">
+				<sequence>
+					<element maxOccurs="1" minOccurs="1" name="tableName" type="string"/>
+					<element maxOccurs="1" minOccurs="1" name="sqlQuery" type="string"/>
+					<element maxOccurs="1" minOccurs="1" name="viewName" type="string"/>
+				</sequence>
+			</extension>
+		</complexContent>
+	</complexType>
+	<complexType name="XMLDataSelectionCondition">
+		<complexContent>
+			<extension base="ITResource:DataSelectionCondition">
+				<sequence>
+					<element maxOccurs="1" minOccurs="1" name="xmlDataType" type="string"/>
+					<element maxOccurs="1" minOccurs="1" name="xmlNameSpace" type="string"/>
+					<element maxOccurs="1" minOccurs="1" name="xmlQueryLanguage" type="string"/>
+					<element maxOccurs="1" minOccurs="1" name="xmlQueryLanguageVersion"
+						type="string"/>
+					<element maxOccurs="1" minOccurs="1" name="xmlQueryExpression" type="string"/>
+				</sequence>
+			</extension>
+		</complexContent>
+	</complexType>
+	<complexType name="WSSecurityCondition">
+		<complexContent>
+			<extension base="ITResource:XMLDataSelectionCondition">
+				<sequence>
+					<element maxOccurs="1" minOccurs="1" name="content_vs_element" type="boolean"/>
+					<element maxOccurs="1" minOccurs="1" name="body" type="string"/>
+					<element maxOccurs="1" minOccurs="1" name="attachment" type="string"/>
+					<element maxOccurs="1" minOccurs="1" name="headerLocalName" type="string"/>
+					<element maxOccurs="1" minOccurs="1" name="headerNameSpace" type="string"/>
+				</sequence>
+			</extension>
+		</complexContent>
+	</complexType>
+
+	<!-- TrafficDivertAction -->
+	<complexType name="TrafficDivertAction">
+		<complexContent>
+			<extension base="ITResource:ConfigurationAction">
+				<sequence>
+					<element name="TrafficDivertActionType"
+						type="ITResource:TrafficDivertActionType"/>
+					<element maxOccurs="1" minOccurs="1" name="packetDivertAction"
+						type="ITResource:TrafficDivertConfigurationCondition"/>
+				</sequence>
+			</extension>
+		</complexContent>
+	</complexType>
+
+	<simpleType name="TrafficDivertActionType">
+		<restriction base="string">
+			<enumeration value="FORWARD"/>
+			<enumeration value="MIRRORING"/>
+			<enumeration value="NAT"/>
+			<enumeration value="ENCAPSULATION"/>
+			<enumeration value="CREATE"/>
+			<enumeration value="ATTACH"/>
+			<enumeration value="DELETE"/>
+			<enumeration value="DEATTACH"/>
+		</restriction>
+	</simpleType>
+
+	<complexType name="TrafficDivertEncapsulationAction">
+		<complexContent>
+			<extension base="ITResource:TrafficDivertAction">
+				<sequence>
+					<element name="EncapsulationParameters" type="string"/>
+				</sequence>
+			</extension>
+		</complexContent>
+	</complexType>
+
+	<complexType name="FilteringAction">
+		<complexContent>
+			<extension base="ITResource:ConfigurationAction">
+				<sequence>
+					<element name="FilteringActionType" type="string"/>
+				</sequence>
+			</extension>
+		</complexContent>
+	</complexType>
+
+
+	<complexType name="EnableAction">
+		<complexContent>
+			<extension base="ITResource:ConfigurationAction">
+				<sequence>
+					<element name="EnableActionType" type="ITResource:EnableActionType"/>
+				</sequence>
+			</extension>
+		</complexContent>
+	</complexType>
+
+
+	<complexType name="ReduceBandwidthAction">
+		<complexContent>
+			<extension base="ITResource:ConfigurationAction">
+				<sequence>
+					<element name="ReduceBandwidthActionType"
+						type="ITResource:ReduceBandwidthActionType"/>
+
+				</sequence>
+			</extension>
+		</complexContent>
+	</complexType>
+
+
+	<complexType name="CountAction">
+		<complexContent>
+			<extension base="ITResource:ConfigurationAction">
+				<sequence>
+					<element name="CountActionType" type="ITResource:CountActionType"/>
+				</sequence>
+			</extension>
+		</complexContent>
+	</complexType>
+
+
+	<complexType name="CheckAction">
+		<complexContent>
+			<extension base="ITResource:ConfigurationAction">
+				<sequence>
+					<element name="CheckActionType" type="ITResource:CheckActionType"/>
+				</sequence>
+			</extension>
+		</complexContent>
+	</complexType>
+
+	<complexType name="RemoveAction">
+		<complexContent>
+			<extension base="ITResource:ConfigurationAction">
+				<sequence>
+					<element name="RemoveActionType" type="ITResource:RemoveActionType"/>
+				</sequence>
+			</extension>
+		</complexContent>
+	</complexType>
+
+	<complexType name="Anti-malwareAction">
+		<complexContent>
+			<extension base="ITResource:ConfigurationAction">
+				<sequence>
+					<element name="anti-malwareActionType" type="string"/>
+				</sequence>
+			</extension>
+		</complexContent>
+	</complexType>
+
+
+	<complexType name="LoggingAction">
+		<complexContent>
+			<extension base="ITResource:ConfigurationAction">
+				<sequence>
+					<element name="loggingActionType" type="string"/>
+				</sequence>
+			</extension>
+		</complexContent>
+	</complexType>
+
+	<complexType name="RemoveAdvertisementAction">
+		<complexContent>
+			<extension base="ITResource:RemoveAction">
+				<sequence>
+					<element name="RemoveAdvertisementActionType"
+						type="ITResource:RemoveAdvertisementActionType"/>
+				</sequence>
+			</extension>
+		</complexContent>
+	</complexType>
+
+
+	<complexType name="RemoveTrackingTechniquesAction">
+		<complexContent>
+			<extension base="ITResource:RemoveAction">
+				<sequence>
+					<element name="RemoveTrackingTechniquesActionType"
+						type="ITResource:RemoveTrackingTechniquesActionType"/>
+				</sequence>
+			</extension>
+		</complexContent>
+	</complexType>
+
+
+	<complexType name="ParentalControlAction">
+
+		<complexContent>
+			<extension base="ITResource:EnableAction">
+				<sequence>
+					<element name="pics" type="ITResource:Pics" minOccurs="0" maxOccurs="1"/>
+				</sequence>
+			</extension>
+		</complexContent>
+	</complexType>
+
+
+	<complexType name="AnonimityAction">
+		<complexContent>
+			<extension base="ITResource:EnableAction">
+				<sequence>
+					<element name="country" type="string" minOccurs="0" maxOccurs="unbounded"/>
+				</sequence>
+			</extension>
+		</complexContent>
+	</complexType>
+
+	<!-- ANASTACIA IoT actions -->
+
+	<!-- IoT Action extends ConfigurationAction which is a configurationRuleAction 
+	<complexType name="IoTAction">
+		<complexContent>
+			<extension base="ITResource:ConfigurationAction">
+				<sequence>
+					<element name="IoTActionType" type="ITResource:EnableActionType" />
+				</sequence>
+			</extension>
+		</complexContent>
+	</complexType>
+	-->
+
+	<complexType name="BootstrappingAction">
+		<complexContent>
+			<extension base="ITResource:ConfigurationAction"> </extension>
+		</complexContent>
+	</complexType>
+
+	<complexType name="PowerMgmtAction">
+		<complexContent>
+			<extension base="ITResource:ConfigurationAction">
+				<sequence>
+					<element name="PowerMgmtActionType" type="ITResource:PowerMgmtActionType"/>
+				</sequence>
+			</extension>
+		</complexContent>
+	</complexType>
+
+	<simpleType name="PowerMgmtActionType">
+		<restriction base="string">
+			<enumeration value="OFF"/>
+			<enumeration value="RESET"/>
+		</restriction>
+	</simpleType>
+
+	<complexType name="VIoTHoneyNetAction">
+		<complexContent>
+			<extension base="ITResource:ConfigurationAction">
+				<sequence>
+					<element name="VIoTHoneyNetActionType" type="ITResource:VIoTHoneyNetActionType"/>
+					<element name="ioTHoneyNet" type="IoTHoneyNet:ioTHoneyNetType"/>
+				</sequence>
+			</extension>
+		</complexContent>
+	</complexType>
+
+	<simpleType name="VIoTHoneyNetActionType">
+		<restriction base="string">
+			<enumeration value="DEPLOY"/>
+			<enumeration value="RESET"/>
+			<enumeration value="REMOVE"/>
+		</restriction>
+	</simpleType>
+
+	<complexType name="AuthorizationAction">
+		<complexContent>
+			<extension base="ITResource:ConfigurationAction">
+				<sequence>
+					<element name="AuthorizationActionType"
+						type="ITResource:AuthorizationActionType"/>
+					<element name="AuthorizationSubject" type="string" minOccurs="0"/>
+					<element name="AuthorizationTarget" type="string" minOccurs="0"/>
+				</sequence>
+			</extension>
+		</complexContent>
+	</complexType>
+
+	<complexType name="AuthorizationCondition">
+		<complexContent>
+			<extension base="ITResource:FilteringConfigurationCondition">
+				<sequence>
+					<element name="AuthorizationSubject" type="string" minOccurs="0"/>
+					<element name="AuthorizationTarget" type="string" minOccurs="0"/>
+				</sequence>
+			</extension>
+		</complexContent>
+	</complexType>
+
+
+	<simpleType name="AuthorizationActionType">
+		<restriction base="string">
+			<enumeration value="ALLOW"/>
+			<enumeration value="DENY"/>
+			<enumeration value="PUSH"/>
+		</restriction>
+	</simpleType>
+
+	<complexType name="AuthenticationAction">
+		<complexContent>
+			<extension base="ITResource:ConfigurationAction">
+				<sequence>
+					<!--<element name="AuthenticationActionType" type="ITResource:AuthenticationActionType" />-->
+					<element name="AuthenticationOption" type="ITResource:AuthenticationOption"
+						maxOccurs="unbounded"/>
+				</sequence>
+			</extension>
+		</complexContent>
+	</complexType>
+
+	<complexType name="AuthenticationOption">
+		<sequence>
+			<element name="AuthenticationTarget" type="ITResource:PacketFilterCondition"/>
+			<element name="AuthenticationMethod" type="string"/>
+			<element name="AuthenticationMechanism" type="string"/>
+			<element name="AuthenticationParameters" type="ITResource:AuthenticationParameters"/>
+		</sequence>
+	</complexType>
+
+	<complexType name="AuthenticationCondition">
+		<complexContent>
+			<extension base="ITResource:FilteringConfigurationCondition">
+				<sequence>
+					<element name="AuthenticationSubject" type="string"/>
+				</sequence>
+			</extension>
+		</complexContent>
+	</complexType>
+
+
+	<!--
+		<simpleType name="AuthenticationActionType">
+		<restriction base="string">
+			<enumeration value="REQUIRED"></enumeration>
+			<enumeration value="NOT_REQUIRED"></enumeration>
+		</restriction>
+	</simpleType>
+	-->
+
+	<!-- /ANASTACIA IoT actions -->
+
+	<complexType name="Pics">
+		<sequence>
+			<element name="ICRA" type="ITResource:ICRA"/>
+			<element name="RSAC" type="ITResource:RSAC"/>
+			<element name="evaluWEB">
+				<simpleType>
+					<restriction base="int">
+						<minInclusive value="0"/>
+
+						<maxInclusive value="2"/>
+					</restriction>
+				</simpleType>
+			</element>
+			<element name="CyberNOTsex">
+				<simpleType>
+					<restriction base="int">
+						<minInclusive value="0"/>
+						<maxInclusive value="8"/>
+					</restriction>
+				</simpleType>
+			</element>
+			<element name="Weburbia">
+				<simpleType>
+					<restriction base="int">
+						<minInclusive value="0"/>
+						<maxInclusive value="2"/>
+					</restriction>
+				</simpleType>
+			</element>
+			<element name="Vancouver" type="ITResource:Vancouver"/>
+			<element name="SafeNet" type="ITResource:SafeNet"/>
+		</sequence>
+	</complexType>
+
+
+	<complexType name="ICRA">
+		<attribute name="ICRAchat" type="boolean"/>
+		<attribute name="ICRAlanguagesexual" type="boolean"/>
+		<attribute name="ICRAnuditygraphic" type="boolean"/>
+		<attribute name="ICRAnuditytopless" type="boolean"/>
+		<attribute name="ICRAnuditybottoms" type="boolean"/>
+		<attribute name="ICRAdrugsuse" type="boolean"/>
+		<attribute name="ICRAdrugsalcohol" type="boolean"/>
+		<attribute name="ICRAviolencetofantasy" type="boolean"/>
+	</complexType>
+
+	<complexType name="RSAC">
+		<attribute name="RSACviolence">
+			<simpleType>
+				<restriction base="int">
+					<minInclusive value="0"/>
+
+					<maxInclusive value="4"/>
+				</restriction>
+			</simpleType>
+		</attribute>
+		<attribute name="RSACsex">
+			<simpleType>
+				<restriction base="int">
+					<minInclusive value="0"/>
+					<maxInclusive value="4"/>
+				</restriction>
+			</simpleType>
+		</attribute>
+		<attribute name="RSACnudity">
+			<simpleType>
+				<restriction base="int">
+					<minInclusive value="0"/>
+					<maxInclusive value="4"/>
+				</restriction>
+			</simpleType>
+		</attribute>
+		<attribute name="RSAClanguage">
+			<simpleType>
+				<restriction base="int">
+					<minInclusive value="0"/>
+					<maxInclusive value="4"/>
+				</restriction>
+			</simpleType>
+		</attribute>
+	</complexType>
+
+	<complexType name="SafeNet">
+		<attribute name="SafeSurfprofanity">
+			<simpleType>
+				<restriction base="int">
+					<minInclusive value="0"/>
+					<maxInclusive value="4"/>
+				</restriction>
+			</simpleType>
+		</attribute>
+		<attribute name="SafeSurfheterosexualthemes">
+			<simpleType>
+				<restriction base="int">
+					<minInclusive value="0"/>
+					<maxInclusive value="4"/>
+				</restriction>
+			</simpleType>
+		</attribute>
+		<attribute name="SafeSurfhomosexualthemes">
+			<simpleType>
+				<restriction base="int">
+
+					<minInclusive value="0"/>
+					<maxInclusive value="4"/>
+				</restriction>
+			</simpleType>
+		</attribute>
+		<attribute name="SafeSurfviolence">
+			<simpleType>
+				<restriction base="int">
+
+					<minInclusive value="0"/>
+					<maxInclusive value="4"/>
+				</restriction>
+			</simpleType>
+		</attribute>
+		<attribute name="SafeSurfdruguse">
+			<simpleType>
+				<restriction base="int">
+
+					<minInclusive value="0"/>
+					<maxInclusive value="4"/>
+				</restriction>
+			</simpleType>
+		</attribute>
+		<attribute name="SafeSurfotheradultthemes">
+			<simpleType>
+				<restriction base="int">
+					<minInclusive value="0"/>
+					<maxInclusive value="4"/>
+				</restriction>
+			</simpleType>
+		</attribute>
+		<attribute name="SafeSurfgambling">
+			<simpleType>
+				<restriction base="int">
+					<minExclusive value="0"/>
+					<maxExclusive value="4"/>
+				</restriction>
+			</simpleType>
+		</attribute>
+	</complexType>
+
+	<complexType name="Vancouver">
+		<attribute name="Vancouvereducationalcontent">
+			<simpleType>
+				<restriction base="int">
+					<minInclusive value="-3"/>
+					<maxInclusive value="2"/>
+				</restriction>
+			</simpleType>
+		</attribute>
+		<attribute name="Vancouverviolence">
+			<simpleType>
+				<restriction base="int">
+					<minInclusive value="-3"/>
+					<maxInclusive value="2"/>
+				</restriction>
+			</simpleType>
+		</attribute>
+		<attribute name="Vancouversex">
+			<simpleType>
+				<restriction base="int">
+					<minInclusive value="-3"/>
+					<maxInclusive value="2"/>
+				</restriction>
+			</simpleType>
+		</attribute>
+		<attribute name="Vancouverprofanity">
+			<simpleType>
+				<restriction base="int">
+					<minInclusive value="-3"/>
+					<maxInclusive value="2"/>
+				</restriction>
+			</simpleType>
+		</attribute>
+		<attribute name="Vancouvergambling">
+			<simpleType>
+				<restriction base="int">
+					<minInclusive value="-3"/>
+					<maxInclusive value="2"/>
+				</restriction>
+			</simpleType>
+		</attribute>
+	</complexType>
+
+	<complexType name="DataProtectionAction">
+		<complexContent>
+			<extension base="ITResource:ConfigurationAction">
+				<sequence>
+					<element name="technology" type="string"/>
+					<element maxOccurs="1" minOccurs="1" name="technologyActionParameters"
+						type="ITResource:ActionParameters"/>
+					<element maxOccurs="unbounded" minOccurs="0"
+						name="technologyActionSecurityProperty"
+						type="ITResource:TechnologyActionSecurityProperty"/>
+				</sequence>
+			</extension>
+		</complexContent>
+	</complexType>
+	<complexType name="TechnologyActionSecurityProperty"/>
+	<complexType name="Integrity">
+		<complexContent>
+			<extension base="ITResource:TechnologyActionSecurityProperty">
+				<sequence>
+					<element maxOccurs="1" minOccurs="0" name="integrityAlgorithm" type="string"/>
+					<element maxOccurs="1" minOccurs="0" name="integrityHeader" type="boolean"/>
+					<element maxOccurs="1" minOccurs="0" name="integrityPayload" type="boolean"/>
+				</sequence>
+			</extension>
+		</complexContent>
+	</complexType>
+	<complexType name="Authentication">
+		<complexContent>
+			<extension base="ITResource:TechnologyActionSecurityProperty">
+				<sequence>
+					<element maxOccurs="1" minOccurs="0" name="serverAuthenticationMechanism"
+						type="string"/>
+					<element maxOccurs="1" minOccurs="0" name="clientAuthenticationMechanism"
+						type="string"/>
+					<element maxOccurs="1" minOccurs="0" name="peerAuthenticationMechanism"
+						type="string"/>
+				</sequence>
+			</extension>
+		</complexContent>
+	</complexType>
+	<complexType name="Confidentiality">
+		<complexContent>
+			<extension base="ITResource:TechnologyActionSecurityProperty">
+				<sequence>
+					<element maxOccurs="1" minOccurs="0" name="encryptionAlgorithm" type="string"/>
+					<element maxOccurs="1" minOccurs="0" name="keySize" type="string"/>
+					<element maxOccurs="1" minOccurs="0" name="mode" type="string"/>
+				</sequence>
+			</extension>
+		</complexContent>
+	</complexType>
+	<element name="technologyActionParameters" type="ITResource:ActionParameters"/>
+	<complexType name="ActionParameters">
+		<sequence>
+			<element maxOccurs="1" minOccurs="0" name="keyExchange"
+				type="ITResource:KeyExchangeParameter"/>
+			<element maxOccurs="unbounded" minOccurs="1" name="technologyParameter"
+				type="ITResource:TechnologySpecificParameters"/>
+			<element maxOccurs="1" minOccurs="0" name="additionalNetworkConfigurationParameters"
+				type="ITResource:AdditionalNetworkConfigurationParameters"/>
+			<element maxOccurs="1" minOccurs="0" name="authenticationParameters"
+				type="ITResource:AuthenticationParameters"/>
+		</sequence>
+	</complexType>
+	<complexType name="KeyExchangeParameter">
+		<sequence>
+			<element maxOccurs="1" minOccurs="0" name="keyExchangeAction" type="string"/>
+			<element maxOccurs="1" minOccurs="0" name="hashAlgorithm" type="string"/>
+			<element maxOccurs="1" minOccurs="0" name="symmetricEncryptionAlgorithm" type="string"/>
+			<element maxOccurs="1" minOccurs="0" name="authenticationType" type="string"/>
+		</sequence>
+	</complexType>
+	<complexType name="TechnologySpecificParameters"/>
+	<complexType name="IPsecTechnologyParameter">
+		<complexContent>
+			<extension base="ITResource:TechnologySpecificParameters">
+				<sequence>
+					<element maxOccurs="1" minOccurs="0" name="IPsecProtocol" type="string"/>
+					<element maxOccurs="1" minOccurs="0" name="isTunnel" type="boolean"/>
+					<element maxOccurs="1" minOccurs="0" name="localEndpoint" type="string"/>
+					<element maxOccurs="1" minOccurs="0" name="remoteEndpoint" type="string"/>
+				</sequence>
+			</extension>
+		</complexContent>
+	</complexType>
+
+
+	<!-- Generic technologyParameter -->
+
+	<complexType name="GenericChannelProtectionTechnologyParameter">
+		<complexContent>
+			<extension base="ITResource:IPsecTechnologyParameter"> </extension>
+		</complexContent>
+	</complexType>
+
+	<!-- /Generic technologyParameter -->
+
+
+	<!-- DTLS technologyParameter -->
+
+	<complexType name="DTLSTechnologyParameter">
+		<complexContent>
+			<extension base="ITResource:IPsecTechnologyParameter"> </extension>
+		</complexContent>
+	</complexType>
+
+	<!-- /DTLS technologyParameter -->
+
+	<complexType name="IKETechnologyParameter">
+		<complexContent>
+			<extension base="ITResource:TechnologySpecificParameters">
+				<sequence>
+					<element maxOccurs="1" minOccurs="0" name="phase2_pfs_group" type="string"/>
+					<element maxOccurs="1" minOccurs="0" name="exchangeMode" type="string"/>
+					<element maxOccurs="1" minOccurs="0" name="phase1_dh_group" type="string"/>
+					<element maxOccurs="1" minOccurs="0" name="phase2_compression_algorithm"
+						type="string"/>
+					<element maxOccurs="1" minOccurs="0" name="hash_algorithm" type="string"/>
+					<element name="ESN" type="boolean" maxOccurs="1" minOccurs="0"/>
+					<element name="encryptionAlgorithm" type="string" maxOccurs="1" minOccurs="1"/>
+					<element name="lifetime" type="string" maxOccurs="1" minOccurs="0"/>
+					<element name="rekey_margin" type="string" maxOccurs="1" minOccurs="0"/>
+					<element name="keyring_tries" type="string" maxOccurs="1" minOccurs="0"/>
+					<element name="MOBIKE" type="boolean" maxOccurs="1" minOccurs="0"/>
+				</sequence>
+			</extension>
+		</complexContent>
+	</complexType>
+	<complexType name="TLS_VPN_TechnologyParameter">
+		<complexContent>
+			<extension base="ITResource:TechnologySpecificParameters">
+				<sequence>
+					<element maxOccurs="1" minOccurs="0" name="peerPort" type="string"/>
+					<element maxOccurs="1" minOccurs="0" name="L4Protocol" type="string"/>
+					<element maxOccurs="1" minOccurs="0" name="localEndpoint" type="string"/>
+					<element maxOccurs="1" minOccurs="0" name="remoteEndpoint" type="string"/>
+					<element maxOccurs="1" minOccurs="0" name="virtualIPSource" type="string"/>
+					<element maxOccurs="1" minOccurs="0" name="virtualIPDestination" type="string"/>
+					<element maxOccurs="1" minOccurs="0" name="device" type="string"/>
+					<element maxOccurs="1" minOccurs="0" name="tlsMode" type="string"/>
+				</sequence>
+			</extension>
+		</complexContent>
+	</complexType>
+	<complexType name="TLS_SSL_TechnologyParameter">
+		<complexContent>
+			<extension base="ITResource:TechnologySpecificParameters">
+				<sequence>
+					<element name="ciphers-client" type="string"/>
+					<element name="ssl-version-client" type="string"/>
+					<element name="ciphers-server" type="string"/>
+					<element name="ssl-version-server" type="string"/>
+				</sequence>
+			</extension>
+		</complexContent>
+	</complexType>
+	<complexType name="AdditionalNetworkConfigurationParameters"/>
+
+	<complexType name="reencryptNetworkConfiguration">
+		<complexContent>
+			<extension base="ITResource:AdditionalNetworkConfigurationParameters">
+				<attribute name="reencryption_strategy" type="string"/>
+			</extension>
+		</complexContent>
+	</complexType>
+
+
+
+	<complexType name="Site2SiteNetworkConfiguration">
+		<complexContent>
+			<extension base="ITResource:AdditionalNetworkConfigurationParameters">
+				<sequence>
+					<element maxOccurs="1" minOccurs="0" name="localNetwork" type="string"/>
+					<element maxOccurs="1" minOccurs="0" name="remoteNetwork" type="string"/>
+					<element maxOccurs="1" minOccurs="0" name="localNetworkNetmask" type="string"/>
+					<element maxOccurs="1" minOccurs="0" name="remoteNetworkNetmask" type="string"/>
+				</sequence>
+			</extension>
+		</complexContent>
+	</complexType>
+	<complexType name="RemoteAccessNetworkConfiguration">
+		<complexContent>
+			<extension base="ITResource:AdditionalNetworkConfigurationParameters">
+				<sequence>
+					<element maxOccurs="1" minOccurs="0" name="startIPAddress" type="string"/>
+					<element maxOccurs="1" minOccurs="0" name="maxClients" type="integer"/>
+					<element maxOccurs="1" minOccurs="0" name="netmask" type="string"/>
+					<element maxOccurs="1" minOccurs="0" name="routedSubnets" type="string"/>
+					<element maxOccurs="1" minOccurs="0" name="dnsServer" type="string"/>
+					<element maxOccurs="1" minOccurs="0" name="domainSuffix" type="string"/>
+					<element maxOccurs="1" minOccurs="0" name="wins" type="string"/>
+
+					<element maxOccurs="1" minOccurs="0" name="localSubnet" type="string"/>
+					<element maxOccurs="1" minOccurs="0" name="remoteSubnet" type="string"/>
+
+				</sequence>
+			</extension>
+		</complexContent>
+	</complexType>
+	<complexType name="AuthenticationParameters">
+		<sequence>
+			<element maxOccurs="1" minOccurs="0" name="psKey_value" type="string"/>
+			<element maxOccurs="1" minOccurs="0" name="psKey_path" type="string"/>
+			<element maxOccurs="1" minOccurs="0" name="ca_path" type="string"/>
+			<element maxOccurs="1" minOccurs="0" name="cert_path" type="string"/>
+			<element maxOccurs="1" minOccurs="0" name="publicKey_path" type="string"/>
+			<element maxOccurs="1" minOccurs="0" name="publicKey_filename" type="string"/>
+			<element maxOccurs="1" minOccurs="0" name="publicKey_passphrase" type="string"/>
+			<element name="ca_id" type="string" maxOccurs="1" minOccurs="0"/>
+			<element name="ca_filename" type="string" maxOccurs="1" minOccurs="0"/>
+			<element name="cert_id" type="string" minOccurs="0" maxOccurs="1"/>
+			<element name="cert_filename" type="string" minOccurs="0" maxOccurs="1"/>
+			<element name="remote_id" type="string" minOccurs="0" maxOccurs="1"/>
+
+		</sequence>
+	</complexType>
+	<element name="technology" type="string"/>
+
+
+
+
+	<complexType name="EnableActionType">
+		<attribute name="enable" type="boolean"/>
+		<attribute name="objectToEnable" type="string"/>
+	</complexType>
+
+	<complexType name="ReduceBandwidthActionType">
+		<attribute name="downlink_bandwidth_value" type="double"/>
+		<attribute name="uplink_bandwidth_value" type="double"/>
+	</complexType>
+
+	<complexType name="CountActionType"/>
+
+	<complexType name="RemoveActionType"/>
+
+	<complexType name="CheckActionType"/>
+
+	<complexType name="RemoveAdvertisementActionType"/>
+
+	<complexType name="RemoveTrackingTechniquesActionType"/>
+
+	<complexType name="PurposeConditionType">
+		<attribute name="propose" type="string"/>
+	</complexType>
+
+	<simpleType name="CapabilityType">
+		<restriction base="string">
+			<enumeration value="Filtering_L4"/>
+			<!--added element by Filtering_L3 Dallal Belabed-->
+			<enumeration value="Filtering_L3"/>
+			<enumeration value="Filtering_L7"/>
+			<enumeration value="Timing"/>
+			<enumeration value="TrafficInspection_L7"/>
+			<enumeration value="Filtering_3G4G"/>
+			<enumeration value="Filtering_DNS"/>
+			<enumeration value="Offline_malware_analysis"/>
+			<enumeration value="Online_SPAM_analysis"/>
+			<enumeration value="Online_antivirus_analysis"/>
+			<enumeration value="Network_traffic_analysis"/>
+			<enumeration value="DDos_attack_protection"/>
+			<enumeration value="lawful_interception"/>
+			<enumeration value="Count_L4Connection"/>
+			<enumeration value="Count_DNS"/>
+			<enumeration value="Protection_confidentiality"/>
+			<enumeration value="Protection_integrity"/>
+			<enumeration value="Compress"/>
+			<enumeration value="Logging"/>
+			<enumeration value="AuthoriseAccess_resurce"/>
+			<enumeration value="Reduce_bandwidth"/>
+			<enumeration value="Online_security_analyzer"/>
+			<enumeration value="Basic_parental_control"/>
+			<enumeration value="Advanced_parental_control"/>
+			<enumeration value="IPSec_protocol"/>
+			<enumeration value="TLS_protocol"/>
+			<enumeration value="reencrypt"/>
+			<enumeration value="antiPhishing"/>
+			<enumeration value="Network_Anonymity"/>
+			<!-- IoT Control capability -->
+			<enumeration value="IoT_control"/>
+			<!-- DTLS capability -->
+			<enumeration value="DTLS_protocol"/>
+			<!-- authentication capability -->
+			<enumeration value="Authentication"/>
+			<!-- traffic divert capability -->
+			<enumeration value="Traffic_Divert"/>
+			<!-- traffic divert capability -->
+			<enumeration value="IoT_honeynet"/>
+			<!-- Privacy capability -->
+			<enumeration value="Privacy"/>
+			<!-- QoS capability -->
+			<enumeration value="QoS"/>
+			<!-- Data aggregation capability -->
+			<enumeration value="Data_aggregation"/>
+			<!-- Traffic_MIX capability -->
+			<enumeration value="Traffic_MIX"/>
+			<!-- Onion_Routing capability -->
+			<enumeration value="Onion_Routing"/>
+			<!-- Data Analysis capability - UTRC -->
+			<enumeration value="Data_analysis"/>
+     		<!-- Data Analysis capability - Ericsson -->
+			<enumeration value="Network_slicing"/>
+			<!-- NL -->
+			<enumeration value="FL"/>
+			<!-- Firewall -->
+			<enumeration value="Firewall"/>
+     		<!-- 5G Security Slice capability -  -->
+			<enumeration value="5G_Security_Slice"/>
+			<!-- E2E Channel Protection -->
+      		<enumeration value="Channel_Protection"/>
+        	<!-- 5G Security Service capability -  -->
+			<enumeration value="5G_Secured_Service"/>
+			<enumeration value="Proof_of_Transit"/>
+      		<!-- Service capabilities, it will allow orchestrating services if required -  -->
+			<enumeration value="5GCore"/>
+      		<enumeration value="WebServer"/>
+      		<!-- FLUIDOS extension for border protection (POLITO) -->
+      		<enumeration value="KubernetesNetworkFiltering"/>
+		</restriction>
+	</simpleType>
+
+	<complexType name="HSPL">
+		<attribute name="HSPL_id" type="string"/>
+		<attribute name="HSPL_text" type="string"/>
+	</complexType>
+
+	<simpleType name="LevelType">
+		<restriction base="string">
+			<enumeration value="child"/>
+			<enumeration value="adolescent"/>
+			<enumeration value="pgr"/>
+			<enumeration value="universal"/>
+		</restriction>
+	</simpleType>
+
+	<complexType name="HTTPCondition">
+		<sequence>
+			<element name="httpMetod" type="string" minOccurs="0" maxOccurs="1"> </element>
+			<element name="browser" type="string" minOccurs="0" maxOccurs="1"> </element>
+			<element name="user_cert" type="string" minOccurs="0" maxOccurs="1"> </element>
+			<element name="ca_cert" type="string" minOccurs="0" maxOccurs="1"> </element>
+			<element name="request_mime_type" type="string" minOccurs="0" maxOccurs="1"> </element>
+			<element name="response_mime_type" type="string" minOccurs="0" maxOccurs="1"> </element>
+			<element name="http_regex_header" type="string" minOccurs="0" maxOccurs="1"> </element>
+			<element name="http_status" type="string" minOccurs="0" maxOccurs="1"/>
+		</sequence>
+	</complexType>
+
+<!-- FLUIDOS extension for border protection (POLITO)  -->
+
+	<!-- Used to define the Private intents, i.e., those regarding communications internal to the VCluster and not requiring any authorization. -->
+	<complexType name="PrivateIntents">
+		<complexContent>
+			<extension base="ITResource:Configuration">
+				<sequence>
+					<element maxOccurs="unbounded" minOccurs="0" name="configurationRule" type="ITResource:ConfigurationRule"> </element>
+					<!-- 
+					<element maxOccurs="unbounded" minOccurs="0" name="NetworkSlicingConditionParameters" type="ITResource:NetworkSlicingConditionParameters"> </element>
+					<element maxOccurs="1" minOccurs="0" name="resolutionStrategy" type="ITResource:ResolutionStrategy"> </element>
+					<element maxOccurs="1" minOccurs="1" name="Name" type="string"/>
+					 -->
+				</sequence>
+			</extension>
+		</complexContent>
+	</complexType>
+	
+	<!-- Used to define the Request intents, i.e., those regarding communications crossing the VCluster border and that MUST be authorized by hosting cluster. -->
+	<complexType name="RequestIntents">
+		<complexContent>
+			<extension base="ITResource:Configuration">
+				<sequence>
+					<element maxOccurs="1" minOccurs="1" name="acceptMonitoring" type="boolean"/>
+					<element maxOccurs="unbounded" minOccurs="0" name="configurationRule" type="ITResource:ConfigurationRule"> </element>
+					<!-- 
+					<element maxOccurs="unbounded" minOccurs="0" name="NetworkSlicingConditionParameters" type="ITResource:NetworkSlicingConditionParameters"> </element>
+					<element maxOccurs="1" minOccurs="0" name="resolutionStrategy" type="ITResource:ResolutionStrategy"> </element>
+					<element maxOccurs="1" minOccurs="1" name="Name" type="string"/>
+					 -->
+				</sequence>
+			</extension>
+		</complexContent>
+	</complexType>
+	
+	<!-- Used to define the Authorization intents, they can be of two kinds:
+			1) "ForbiddenList" - express the communications that are explicitly denied if requested by hosted resources
+			2) "MandatoryList" - express the communications that are requested to be supported by hosted resources (e.g., open port X on offloaded resources for monitoring)
+	     all the other connections that are requested, and not forbidden, are allowed. -->
+	<complexType name="AuthorizationIntents">
+		<complexContent>
+			<extension base="ITResource:Configuration">
+				<sequence>
+					<element maxOccurs="unbounded" minOccurs="0" name="forbiddenConnectionList" type="ITResource:ConfigurationRule"> </element>
+					<element maxOccurs="unbounded" minOccurs="0" name="mandatoryConnectionList" type="ITResource:ConfigurationRule"> </element>
+					<!-- 
+					<element maxOccurs="unbounded" minOccurs="0" name="NetworkSlicingConditionParameters" type="ITResource:NetworkSlicingConditionParameters"> </element>
+					<element maxOccurs="1" minOccurs="0" name="resolutionStrategy" type="ITResource:ResolutionStrategy"> </element>
+					<element maxOccurs="1" minOccurs="1" name="Name" type="string"/>
+					 -->
+				</sequence>
+			</extension>
+		</complexContent>
+	</complexType>
+	
+	<!-- To express the DENY/ALLOW action of each intent.
+		 NOTE: IntraVClusterConf. + InterVClusterConf must be all "ALLOW", whereas AuthorizationInt. can use both "ALLOW" and "DENY" 
+	-->
+	<complexType name="KubernetesNetworkFilteringAction">
+		<complexContent>
+			<extension base="ITResource:ConfigurationAction">
+				<sequence>
+					<element name="KubernetesNetworkFilteringActionType" type="string"/>
+				</sequence>
+			</extension>
+		</complexContent>
+	</complexType>
+	<simpleType name="KubernetesNetworkFilteringActionType">
+		<restriction base="string">
+			<enumeration value="ALLOW"/>
+			<enumeration value="DENY"/>
+		</restriction>
+	</simpleType>
+	
+	<!-- To express the condition for each "ConfigurationRule" -->
+	<complexType name="KubernetesNetworkFilteringCondition">
+		<complexContent>
+			<extension base="ITResource:ConfigurationCondition">
+				<sequence>
+					<element maxOccurs="1" minOccurs="1" name="source" type="ITResource:ResourceSelector"/>
+					<element maxOccurs="1" minOccurs="1" name="sourcePort" type="string"/>
+					<element maxOccurs="1" minOccurs="1" name="destination" type="ITResource:ResourceSelector"/>
+					<element maxOccurs="1" minOccurs="1" name="destinationPort" type="string"/>
+					<element maxOccurs="1" minOccurs="1" name="protocolType" type="ITResource:ProtocolType"/>
+				</sequence>
+			</extension>
+		</complexContent>
+	</complexType>
+	<complexType name="ResourceSelector">
+		<sequence> 
+			<element maxOccurs="1" minOccurs="1" name="isHostCluster" type="boolean"/>
+		</sequence>
+	</complexType>
+
+	<complexType name="PodNamespaceSelector">
+		<complexContent>
+			<extension base="ITResource:ResourceSelector">
+				<sequence>
+					<element maxOccurs="unbounded" minOccurs="1" name="pod" type="ITResource:KeyValue"/>
+					<element maxOccurs="unbounded" minOccurs="1" name="namespace" type="ITResource:KeyValue"/>
+				</sequence>
+			</extension>
+		</complexContent>
+	</complexType>
+	
+	<complexType name="CIDRSelector">
+		<complexContent>
+			<extension base="ITResource:ResourceSelector">
+				<sequence>
+					<element maxOccurs="1" minOccurs="1" name="addressRange" type="string"/>
+				</sequence>
+			</extension>
+		</complexContent>
+	</complexType>
+	
+	<simpleType name="ProtocolType">
+		<restriction base="string">
+			<enumeration value="TCP"/>
+			<enumeration value="UDP"/>
+			<enumeration value="SCTP"/>
+			<enumeration value="ALL"/>
+		</restriction>
+	</simpleType>
+<!--
+ TODO:
+    - check su molteplicità dei vari attributi
+    - file XML per testare i diversi scenari
+-->
+	
+<!-- end of POLITO's extension -->
+
+</schema>

@@ -680,8 +680,8 @@ public class KubernetesController {
                     JsonObject source = jsonObject.getAsJsonObject("source");
                     JsonObject destination = jsonObject.getAsJsonObject("destination");
 
-                    condition.setSource(parseResourceSelector(source.getAsJsonObject("resourceSelector")));
-                    condition.setDestination(parseResourceSelector(destination.getAsJsonObject("resourceSelector")));
+                    condition.setSource(parseResourceSelector(source.getAsJsonObject("resourceSelector"), source.get("isHostCluster").getAsBoolean()));
+                    condition.setDestination(parseResourceSelector(destination.getAsJsonObject("resourceSelector"), destination.get("isHostCluster").getAsBoolean()));
                     if (source.has("sourcePort") && !source.get("sourcePort").isJsonNull()) {
                         condition.setSourcePort(source.get("sourcePort").getAsString());
                     }
@@ -975,7 +975,7 @@ public class KubernetesController {
                 RequestIntents requestIntents;
                 try {
                     System.out.println("Waiting for \"consumer-network-intent\" configMap to become available before starting verification process...");
-                    while ((requestIntents = accessConfigMap(client, "fluidos", "consumer-network-intent")) == null){ //Name and Namespace of ConfigMap to be defined
+                    while ((requestIntents = accessConfigMap(client, "fluidos", "consumer-network-intent")) == null){ //TODO: Name and Namespace of ConfigMap to be defined
                         Thread.sleep(1);
                     }
                 
@@ -1015,8 +1015,8 @@ public class KubernetesController {
             JsonObject source = communication.getAsJsonObject("source");
             JsonObject destination = communication.getAsJsonObject("destination");
 
-            condition.setSource(parseResourceSelector(source.getAsJsonObject("resourceSelector")));
-            condition.setDestination(parseResourceSelector(destination.getAsJsonObject("resourceSelector")));
+            condition.setSource(parseResourceSelector(source.getAsJsonObject("resourceSelector"), source.get("isHostCluster").getAsBoolean()));
+            condition.setDestination(parseResourceSelector(destination.getAsJsonObject("resourceSelector"), destination.get("isHostCluster").getAsBoolean()));
 
             if (communication.has("sourcePort") && !communication.get("sourcePort").isJsonNull()) {
                 condition.setSourcePort(communication.get("sourcePort").getAsString());
@@ -1041,8 +1041,9 @@ public class KubernetesController {
         }
 
     }
-
-    private ResourceSelector parseResourceSelector(JsonObject resourceSelector) {
+    
+    // Added second argument isHostCluster for compatibility with actual structure of flavors (peeringCandidates), slightly different from what's defined in the XSD of MSPL
+    private ResourceSelector parseResourceSelector(JsonObject resourceSelector, boolean isHostCluster) {
         ResourceSelector selector = null;
         String typeIdentifier = resourceSelector.get("typeIdentifier").getAsString();
 
@@ -1083,9 +1084,7 @@ public class KubernetesController {
             selector = podNamespaceSelector;
         }
 
-        if (resourceSelector.has("isHotCluster")) {
-            selector.setIsHostCluster(resourceSelector.get("isHotCluster").getAsBoolean());
-        }
+        selector.setIsHostCluster(isHostCluster);
 
         return selector;
     }
@@ -1299,7 +1298,16 @@ public class KubernetesController {
         System.out.println(
                 "Network Policies to allow traffic between offloaded pods and local ones applied to namespace: "
                         + offloadedNamespace);
-        networkingApi.createNamespacedNetworkPolicy(offloadedNamespace, combinedPolicy, null, null, null);
+        try{
+            networkingApi.createNamespacedNetworkPolicy(offloadedNamespace, combinedPolicy, null, null, null);
+        } catch (ApiException e) {
+            if(e.getCode() == 409) {
+                System.out.println("Network Policy already exists in namespace " + namespace);
+            } else {
+                System.err.println("Error while creating Network Policy: " + e.getResponseBody());
+                e.printStackTrace();
+            }
+        }
     }
 
     private List<V1NetworkPolicyEgressRule> buildEgressRules(List<String> ipAddress) {
