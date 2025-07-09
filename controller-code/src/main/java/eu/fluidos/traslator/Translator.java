@@ -20,16 +20,14 @@ public class Translator {
     private Map<String,String> remoteNamespaces;
     private Map <LabelsKeyValue,String> availablePodsMap;
     private int index;
-    private boolean isLocal;
 
-    public Translator(List<RequestIntents> reqIntentsListHarmonized, Map<String,String> localNamespaces,Map<String,String> remoteNamespaces,Map <LabelsKeyValue,String> availablePodsMap,boolean isLocal ) {
+    public Translator(List<RequestIntents> reqIntentsListHarmonized, Map<String,String> localNamespaces,Map<String,String> remoteNamespaces,Map <LabelsKeyValue,String> availablePodsMap) {
         this.index=0;
         this.reqIntentsListHarmonized = reqIntentsListHarmonized;
         this.networkPolicies = new ArrayList<>();
         this.localNamespaces=localNamespaces;
         this.remoteNamespaces=remoteNamespaces;
         this.availablePodsMap = availablePodsMap;
-        this.isLocal=isLocal;
             if (this.reqIntentsListHarmonized != null){
                 for (RequestIntents reqIntent : reqIntentsListHarmonized){
                     for(ConfigurationRule cr: reqIntent.getConfigurationRule()) {
@@ -61,17 +59,17 @@ public class Translator {
                     }
                 }               
             }
-            writeNetworkPoliciesToFile1(networkPolicies);
+            //writeNetworkPoliciesToFile1(networkPolicies);
     }
 
     private Ruleinfo retrieveInfo (KubernetesNetworkFilteringCondition cond){
         List<KeyValue> sourcePodList = new ArrayList<>();
-        String sourceNamespace = new String();
-        CIDRSelector cidrSource = new CIDRSelector();
         List<KeyValue> destinationPodList = new ArrayList<>();
-        List<KeyValue> destinationNamespaceList = new ArrayList<>();
         List<KeyValue> sourceNamespaceList = new ArrayList<>();
+        List<KeyValue> destinationNamespaceList = new ArrayList<>();
+        CIDRSelector cidrSource = new CIDRSelector();
         CIDRSelector cidrDestination = new CIDRSelector();
+        
 		if(cond.getSource().getClass().equals(PodNamespaceSelector.class)){
 			PodNamespaceSelector pns = (PodNamespaceSelector) cond.getSource();
             sourcePodList = pns.getPod();
@@ -731,140 +729,8 @@ public class Translator {
         }
         return networkPolicyList;
     }
+  
 
-    private V1NetworkPolicy createIngressAllowNetworkPolicy1 (String namespaceName,String name,Ruleinfo rule){
-        V1NetworkPolicy networkPolicy = new V1NetworkPolicy();
-        networkPolicy.setApiVersion("networking.k8s.io/v1");
-        networkPolicy.setKind("NetworkPolicy");
-        V1ObjectMeta metadata = new V1ObjectMeta();
-        metadata.setName(name.replaceAll("[^a-zA-Z0-9]", "").toLowerCase()+namespaceName);
-        metadata.namespace(namespaceName);
-        networkPolicy.setMetadata(metadata);
-        
-        V1NetworkPolicySpec spec = new V1NetworkPolicySpec();
-        spec.setPolicyTypes(Collections.singletonList("Ingress"));
-        V1LabelSelector podSelector = new V1LabelSelector();
-        Map<String, String> matchLabelsDestinationPod = rule.getLabelsDestinationPod();
-        if (matchLabelsDestinationPod.containsValue("*")){
-            spec.setPodSelector(null); 
-        }else {
-            if(matchLabelsDestinationPod.isEmpty()){
-                spec.setPodSelector(podSelector);
-            }else{
-                podSelector.setMatchLabels(matchLabelsDestinationPod);
-                spec.setPodSelector(podSelector);               
-            }
-        }
-        V1NetworkPolicyIngressRule ingressRule = new V1NetworkPolicyIngressRule();
-        List<V1NetworkPolicyIngressRule> ingressRules = new ArrayList<>();
-        V1NetworkPolicyPort port = new V1NetworkPolicyPort();
-        
-        if (rule.getPort().contains("-")) {
-            String[] portRange = rule.getPort().split("-");
-            int startPort = Integer.parseInt(portRange[0]);
-            int endPort = Integer.parseInt(portRange[1]);
-            port.setPort(new IntOrString(startPort));
-            port.setEndPort(endPort);
-        } else {;
-            if (rule.getPort().equals("*")){
-                port.setPort(null);
-            } else{
-                int portValue = Integer.parseInt(rule.getPort());
-                port.setPort(new IntOrString(portValue));
-            }
-        }
-        if (rule.getProtocol().equals("*")){
-            port.setProtocol(null);
-        } else {
-            port.setProtocol(rule.getProtocol());
-        }
-        if(port.getPort() != null || port.getProtocol() != null){
-            ingressRule.setPorts(Collections.singletonList(port)); 
-        }
-
-        V1LabelSelector destinationSelector = new V1LabelSelector();
-        V1NetworkPolicyPeer destinationPeer = new V1NetworkPolicyPeer();
-        Map<String, String> matchLabelsSourcePod = rule.getLabelsSourcePod();
-        if(matchLabelsSourcePod.containsValue("*")){
-            destinationSelector.setMatchLabels(null);
-            destinationPeer.setPodSelector(destinationSelector);            
-        } else if (!matchLabelsSourcePod.containsValue("*") && !matchLabelsSourcePod.isEmpty()){
-            destinationSelector.setMatchLabels(matchLabelsSourcePod);
-            destinationPeer.setPodSelector(destinationSelector);            
-        }
-
-        if (rule.getCidrSource().getAddressRange() != null){
-            V1IPBlock ipBlock = new V1IPBlock();
-            ipBlock.setCidr(rule.getCidrSource().getAddressRange());
-            destinationPeer.setIpBlock(ipBlock);
-        }
-
-        Map<String, String> matchLabelsSourceNamespace = rule.getLabelsSourceNamespace();
-        if(!matchLabelsSourceNamespace.containsValue("*") && !matchLabelsSourceNamespace.isEmpty()){
-            V1LabelSelector namespace = new V1LabelSelector();
-            namespace.setMatchLabels(matchLabelsSourceNamespace);
-            destinationPeer.setNamespaceSelector(namespace);
-        }else{
-            if(rule.getCidrSource().getAddressRange() == null){
-                V1LabelSelector namespace = new V1LabelSelector();
-                destinationPeer.setNamespaceSelector(namespace);
-            }
-        }
-
-        ingressRule.setFrom(Collections.singletonList(destinationPeer));
-        ingressRules.add(ingressRule);
-        spec.ingress(ingressRules);
-        networkPolicy.setSpec(spec);
-        return networkPolicy;
-        
-    }
-    
-    private void writeNetworkPoliciesToFile1(List<V1NetworkPolicy> networkPolicies) {
-        try {
-            for (V1NetworkPolicy networkPolicy : networkPolicies) {
-                String fileName = "/app/network_policies/" + networkPolicy.getMetadata().getName() + " " + networkPolicy.getSpec().getPolicyTypes().get(0)+".yaml";
-                FileWriter fileWriter = new FileWriter(fileName);
-                LinkedHashMap<String, Object> yamlData = new LinkedHashMap<>();
-                yamlData.put("apiVersion", networkPolicy.getApiVersion());
-                yamlData.put("kind", networkPolicy.getKind());
-    
-                LinkedHashMap<String, Object> metadata = new LinkedHashMap<>();
-                metadata.put("name", networkPolicy.getMetadata().getName());
-                if(networkPolicy.getMetadata().getNamespace() != null){
-                    metadata.put("namespace", networkPolicy.getMetadata().getNamespace());
-                }
-                yamlData.put("metadata", metadata);
-    
-                LinkedHashMap<String, Object> spec = new LinkedHashMap<>();
-                spec.put("policyTypes", networkPolicy.getSpec().getPolicyTypes());
-                
-                LinkedHashMap<String, Object> podSelector = new LinkedHashMap<>();
-                LinkedHashMap<String, Object> matchLabels = new LinkedHashMap<>();
-                if (networkPolicy.getSpec().getPodSelector() != null) {
-                    matchLabels.putAll(networkPolicy.getSpec().getPodSelector().getMatchLabels());
-                    podSelector.put("matchLabels", matchLabels);
-                    spec.put("podSelector", podSelector);
-                }else{
-                    spec.put("podSelector",podSelector);
-                }
-    
-                if (networkPolicy.getSpec().getEgress() != null && !networkPolicy.getSpec().getEgress().isEmpty()) {
-                    spec.put("egress", networkPolicy.getSpec().getEgress());
-                }
-                if (networkPolicy.getSpec().getIngress() != null && !networkPolicy.getSpec().getIngress().isEmpty()) {
-                    spec.put("ingress", networkPolicy.getSpec().getIngress());
-                }
-    
-                yamlData.put("spec", spec);
-    
-                Yaml yaml = new Yaml();
-                yaml.dump(yamlData, fileWriter);
-                fileWriter.close();
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
 
     private String hashName(String name , V1NetworkPolicy networkPolicy ,String Policy_type,String namespaceName) {
             StringBuilder string_to_hash = new StringBuilder(name);

@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<ITResourceOrchestration xmlns="http://modeliosoft/xsddesigner/a22bd60b-ee3d-425c-8618-beb6a854051a/ITResource.xsd"
+                         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="omspl_5b0fd7359a5e40fe92399710c1152ed9"
+                         xsi:schemaLocation="http://modeliosoft/xsddesigner/a22bd60b-ee3d-425c-8618-beb6a854051a/ITResource.xsd mspl.xsd">
+
+    <!-- Request Intents -->
+    <ITResource>
+        <configuration xsi:type="RequestIntents">
+            <capability>
+                <Name>KubernetesNetworkFiltering</Name>
+            </capability>
+            <acceptMonitoring>true</acceptMonitoring>
+            <configurationRule>
+                <configurationRuleAction xsi:type="KubernetesNetworkFilteringAction">
+                    <KubernetesNetworkFilteringActionType>ALLOW</KubernetesNetworkFilteringActionType>
+                </configurationRuleAction>
+                <configurationCondition xsi:type="KubernetesNetworkFilteringCondition">
+                    <isCNF>false</isCNF>
+                    <source xsi:type="PodNamespaceSelector">
+                        <isHostCluster>false</isHostCluster>
+                        <pod>
+                            <key>app</key>
+                            <value>database</value>
+                        </pod>
+                        <namespace>
+                            <key>name</key>
+                            <value>default</value>
+                        </namespace>
+                    </source>
+                    <sourcePort>80</sourcePort>
+                    <destination xsi:type="CIDRSelector">
+                        <isHostCluster>true</isHostCluster>
+                        <addressRange>192.168.0.0/16</addressRange>
+                    </destination>
+                    <destinationPort>443</destinationPort>
+                    <protocolType>TCP</protocolType>
+                </configurationCondition>
+                <externalData xsi:type="Priority">
+                    <value>60000</value>
+                </externalData>
+                <Name>RequestIntent_0</Name>
+                <isCNF>false</isCNF>
+            </configurationRule>
+        </configuration>
+    </ITResource>
+</ITResourceOrchestration>

@@ -53,7 +53,7 @@ public class HarmonizationData {
 	 */
 
 	 public boolean verify(RequestIntents requestIntent, AuthorizationIntents authIntent) {
-		System.out.println("[VERIFY] Process started...");
+//		System.out.println("[VERIFY] Process started...");
 		for (ConfigurationRule cr : requestIntent.getConfigurationRule()) {
 			if (!verifyConfigurationRule(cr, authIntent.getForbiddenConnectionList())) {
 				return false;
@@ -140,10 +140,9 @@ public class HarmonizationData {
 					+ "}");
 
 			harmonizedRules.addAll(harmonizeConfigurationRule(cr, authIntent.getForbiddenConnectionList(),
-					podsByNamespaceAndLabelsConsumer, podsByNamespaceAndLabelsProvider));
+					podsByNamespaceAndLabelsConsumer, podsByNamespaceAndLabelsProvider, 0));
 		}
 		return harmonizedRules;
-
 	}
 
 	/**
@@ -174,7 +173,7 @@ public class HarmonizationData {
 			for (ConfigurationRule cr_provider : authIntent.getMandatoryConnectionList()) {
 				//KubernetesNetworkFilteringCondition tmp1 = (KubernetesNetworkFilteringCondition) cr_provider.getConfigurationCondition();
 				List<ConfigurationRule> tmp = harmonizeConfigurationRule(cr_provider, harmonizedRules,
-						podsByNamespaceAndLabelsProvider, podsByNamespaceAndLabelsConsumer);
+						podsByNamespaceAndLabelsProvider, podsByNamespaceAndLabelsConsumer, 0);
 				for (ConfigurationRule cr : tmp)
 					harmonizedRules.add(HarmonizationUtils.deepCopyConfigurationAndInvertVCluster(cr));
 			}
@@ -204,7 +203,7 @@ public class HarmonizationData {
 		 */
 		for (ConfigurationRule cr_cons : harmonizedRequestConsumerRules) {
 			List<ConfigurationRule> tmp = harmonizeConfigurationRule(cr_cons, harmonizedRules,
-					podsByNamespaceAndLabelsConsumer, podsByNamespaceAndLabelsProvider);
+					podsByNamespaceAndLabelsConsumer, podsByNamespaceAndLabelsProvider, 0);
 			for (ConfigurationRule cr : tmp) {
 				ConfigurationRule crInverted = HarmonizationUtils.deepCopyConfigurationAndInvertVCluster(cr);
 				harmonizedRules.add(crInverted);
@@ -216,16 +215,17 @@ public class HarmonizationData {
 
 	private List<ConfigurationRule> harmonizeConfigurationRule(ConfigurationRule conn, List<ConfigurationRule> connList,
 			HashMap<String, HashMap<String, List<Pod>>> map_conn,
-			HashMap<String, HashMap<String, List<Pod>>> map_connList) {
+			HashMap<String, HashMap<String, List<Pod>>> map_connList,
+			Integer level) {
 		List<ConfigurationRule> resList = new ArrayList<>();
 		ConfigurationRule res = HarmonizationUtils.deepCopyConfigurationRule(conn);
 		KubernetesNetworkFilteringCondition resCond = (KubernetesNetworkFilteringCondition) res
 				.getConfigurationCondition();
-		KubernetesNetworkFilteringCondition tmp1 = (KubernetesNetworkFilteringCondition) conn
-				.getConfigurationCondition();
 		int flag = 0;
 		boolean dirty = false;
 		for (ConfigurationRule confRule : connList) {
+//			System.out.println("[harmonization] - processing rule { [" + confRule.getName()
+//					+ "]} vs intent { [" + res.getName() + "-" + HarmonizationUtils.kubernetesNetworkFilteringConditionToString(resCond) +"] } - level: " + level);
 			flag = 0;
 			KubernetesNetworkFilteringCondition tmp = (KubernetesNetworkFilteringCondition) confRule
 					.getConfigurationCondition();
@@ -248,8 +248,6 @@ public class HarmonizationData {
 				continue;
 			}
 			// Step-1.3: check the source and destination.s
-			PodNamespaceSelector pns1 = (PodNamespaceSelector) resCond.getSource();
-			PodNamespaceSelector pns2 = (PodNamespaceSelector) tmp.getSource();
 			List<ResourceSelector> source = HarmonizationUtils.computeHarmonizedResourceSelector(resCond.getSource(),
 					tmp.getSource(), map_conn, map_connList);
 
@@ -292,18 +290,18 @@ public class HarmonizationData {
 			} else if (destinationPortList.length > 1) {
 				ConfigurationRule res2 = addHarmonizedRules(res, resCond, destinationPortList[1], loggerInfo,
 						"destinationPort", null);
-				resList.addAll(harmonizeConfigurationRule(res2, connList, map_conn, map_connList));
+				resList.addAll(harmonizeConfigurationRule(res2, connList, map_conn, map_connList, level + 1));
 
 				ConfigurationRule res3 = addHarmonizedRules(res, resCond, destinationPortList[0], loggerInfo,
 						"destinationPort", null);
-				resList.addAll(harmonizeConfigurationRule(res3, connList, map_conn, map_connList));
+				resList.addAll(harmonizeConfigurationRule(res3, connList, map_conn, map_connList, level + 1));
 
 			} else {
 				ConfigurationRule res3 = addHarmonizedRules(res, resCond, destinationPortList[0], loggerInfo,
 						"destinationPort", null);
 				KubernetesNetworkFilteringCondition k = (KubernetesNetworkFilteringCondition) res3
 						.getConfigurationCondition();
-				resList.addAll(harmonizeConfigurationRule(res3, connList, map_conn, map_connList));
+				resList.addAll(harmonizeConfigurationRule(res3, connList, map_conn, map_connList, level + 1));
 			}
 
 			// Step-2.2: handle the overlap with the protocol type field. Also in this case,
@@ -319,16 +317,16 @@ public class HarmonizationData {
 
 				ConfigurationRule res1 = addHarmonizedRules(res, resCond, protocolList[1], loggerInfo,
 						"transportProtocol", null);
-				resList.addAll(harmonizeConfigurationRule(res1, connList, map_conn, map_connList));
+				resList.addAll(harmonizeConfigurationRule(res1, connList, map_conn, map_connList, level + 1));
 
 				ConfigurationRule res2 = addHarmonizedRules(res, resCond, protocolList[0], loggerInfo,
 						"transportProtocol", null);
-				resList.addAll(harmonizeConfigurationRule(res2, connList, map_conn, map_connList));
+				resList.addAll(harmonizeConfigurationRule(res2, connList, map_conn, map_connList, level + 1));
 
 			} else {
 				ConfigurationRule res2 = addHarmonizedRules(res, resCond, protocolList[0], loggerInfo,
 						"transportProtocol", null);
-				resList.addAll(harmonizeConfigurationRule(res2, connList, map_conn, map_connList));
+				resList.addAll(harmonizeConfigurationRule(res2, connList, map_conn, map_connList, level + 1));
 			}
 			// Step-2.3: solve possible problems with the source and destination selectors.
 			if (source.isEmpty()) {
@@ -336,7 +334,7 @@ public class HarmonizationData {
 			} else {
 				for (ResourceSelector rs : source) {
 					ConfigurationRule res1 = addHarmonizedRules(res, resCond, "", loggerInfo, "sourceSelector", rs);
-					resList.addAll(harmonizeConfigurationRule(res1, connList, map_conn, map_connList));
+					resList.addAll(harmonizeConfigurationRule(res1, connList, map_conn, map_connList, level + 1));
 				}
 			}
 
@@ -346,7 +344,7 @@ public class HarmonizationData {
 				for (ResourceSelector rs : destination) {
 					ConfigurationRule res1 = addHarmonizedRules(res, resCond, "", loggerInfo, "destinationSelector",
 							rs);
-					resList.addAll(harmonizeConfigurationRule(res1, connList, map_conn, map_connList));
+					resList.addAll(harmonizeConfigurationRule(res1, connList, map_conn, map_connList, level + 1));
 				}
 			}
 

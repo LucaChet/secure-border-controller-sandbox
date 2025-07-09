@@ -102,7 +102,7 @@ public class Module {
                 }
             }
             Translator intent_traslation = new Translator(reqIntentsListHarmonized, this.localNamespaces,
-                    this.remoteNamespaces, availablePodsMap, this.isLocal);
+                    this.remoteNamespaces, availablePodsMap);//, this.isLocal);
         } catch (ApiException e) {
             System.err.println("Error: ");
             e.printStackTrace();

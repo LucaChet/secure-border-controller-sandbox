@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<ITResourceOrchestration xmlns="http://modeliosoft/xsddesigner/a22bd60b-ee3d-425c-8618-beb6a854051a/ITResource.xsd"
+                         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="omspl_5b0fd7359a5e40fe92399710c1152ed9"
+                         xsi:schemaLocation="http://modeliosoft/xsddesigner/a22bd60b-ee3d-425c-8618-beb6a854051a/ITResource.xsd mspl.xsd">
+
+    <!-- Request Intents -->
+    <ITResource>
+        <configuration xsi:type="RequestIntents">
+            <capability>
+                <Name>KubernetesNetworkFiltering</Name>
+            </capability>
+            <acceptMonitoring>true</acceptMonitoring>
+            <configurationRule>
+                <configurationRuleAction xsi:type="KubernetesNetworkFilteringAction">
+                    <KubernetesNetworkFilteringActionType>ALLOW</KubernetesNetworkFilteringActionType>
+                </configurationRuleAction>
+                <configurationCondition xsi:type="KubernetesNetworkFilteringCondition">
+                    <isCNF>false</isCNF>
+                    <source xsi:type="CIDRSelector">
+                        <isHostCluster>false</isHostCluster>
+                        <addressRange>172.40.0.0/16</addressRange>
+                    </source>
+                    <sourcePort>6379</sourcePort>
+                    <destination xsi:type="CIDRSelector">
+                        <isHostCluster>true</isHostCluster>
+                        <addressRange>172.41.0.0/16</addressRange>
+                    </destination>
+                    <destinationPort>6379</destinationPort>
+                    <protocolType>TCP</protocolType>
+                </configurationCondition>
+                <externalData xsi:type="Priority">
+                    <value>58500</value>
+                </externalData>
+                <Name>RequestIntent_CIDR_17</Name>
+                <isCNF>false</isCNF>
+            </configurationRule>
+        </configuration>
+    </ITResource>
+</ITResourceOrchestration>

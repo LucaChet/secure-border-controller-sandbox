@@ -18,7 +18,7 @@ public class HarmonizationService{
 	String consumer_mspl = "/app/testfile/consumer_MSPL_demo.xml";
 
 	public RequestIntents harmonize(Cluster cluster, RequestIntents requestIntents, AuthorizationIntents authorizationIntents) {
-		System.out.println("[HARMONIZATION] Process started...");
+//		System.out.println("[HARMONIZATION] Process started...");
 
 		AuthorizationIntents authIntentsProvider;
 		RequestIntents requestIntentsConsumer;
@@ -29,14 +29,14 @@ public class HarmonizationService{
 		authIntentsProvider = authorizationIntents;
 		
 		podsByNamespaceAndLabelsProvider = clusterService.initializeHashMaps(cluster);
-		
- 		System.out.println("[HARMONIZATION] Process the request intents:");
-		harmonizationData.printRequestIntents(requestIntentsConsumer, "consumer");
-		System.out.println("[HARMONIZATION] Process the authorization intents:");
-		harmonizationData.printAuthorizationIntents(authIntentsProvider);
+//		
+// 		System.out.println("[HARMONIZATION] Process the request intents:");
+//		harmonizationData.printRequestIntents(requestIntentsConsumer, "consumer");
+//		System.out.println("[HARMONIZATION] Process the authorization intents:");
+//		harmonizationData.printAuthorizationIntents(authIntentsProvider);
 
 		if(authIntentsProvider != null) {
-			if (authIntentsProvider.getMandatoryConnectionList().size() > 1 && !requestIntentsConsumer.isAcceptMonitoring()) {
+			if (authIntentsProvider.getMandatoryConnectionList().size() > 0 && !requestIntentsConsumer.isAcceptMonitoring()) {
 				return null;
 			}
 		}else{
@@ -44,13 +44,14 @@ public class HarmonizationService{
 			return null;
 		}
 
-		System.out.println("[HARMONIZATION] Solving discordances...");
+//		System.out.println("[HARMONIZATION] Solving discordances...");
 		List<ConfigurationRule> harmonizedRequest_Consumer = harmonizationData.solveTypeOneDiscordances(requestIntentsConsumer, authIntentsProvider, podsByNamespaceAndLabelsConsumer, podsByNamespaceAndLabelsProvider);
 		harmonizedRequest_Consumer = harmonizationData.solverTypeTwoDiscordances(harmonizedRequest_Consumer, requestIntentsConsumer, authIntentsProvider, podsByNamespaceAndLabelsProvider, podsByNamespaceAndLabelsConsumer);
 		RequestIntents requestIntent = new RequestIntents();
 		requestIntent.getConfigurationRule().addAll(harmonizedRequest_Consumer);
         return requestIntent;
     }
+
 
 	/* LEGACY METHOD
 	public boolean verify(Cluster cluster, AuthorizationIntents authIntents) {
