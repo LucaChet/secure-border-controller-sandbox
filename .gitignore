@@ -1,2 +1,4 @@
 controller-code/target/
 controller-code/gen-src/
+orchestrator-code/target/
+orchestrator-code/gen-src/
