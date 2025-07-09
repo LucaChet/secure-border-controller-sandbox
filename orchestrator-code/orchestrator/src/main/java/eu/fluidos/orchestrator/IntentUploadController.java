@@ -1,9 +1,7 @@
 package eu.fluidos.orchestrator;
 
-import java.io.IOException;
 import java.io.File;
 
-import eu.fluidos.orchestrator.*;
 import eu.fluidos.jaxb.*;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;

@@ -9,7 +9,6 @@ import org.springframework.stereotype.Service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
-import com.google.protobuf.Api;
 
 import eu.fluidos.jaxb.ConfigurationRule;
 import eu.fluidos.jaxb.KubernetesNetworkFilteringCondition;
