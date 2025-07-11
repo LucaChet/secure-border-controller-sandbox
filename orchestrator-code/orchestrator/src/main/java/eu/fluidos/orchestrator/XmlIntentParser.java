@@ -7,10 +7,6 @@ import jakarta.xml.bind.Unmarshaller;
 
 import java.io.File;
 import java.io.FileInputStream;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.stream.Collectors;
 
 import javax.xml.XMLConstants;
 import javax.xml.validation.Schema;
@@ -26,8 +22,9 @@ public class XmlIntentParser {
             JAXBContext jc = JAXBContext.newInstance("eu.fluidos.jaxb");
             Unmarshaller u = jc.createUnmarshaller();
             SchemaFactory sf = SchemaFactory.newInstance(XMLConstants.W3C_XML_SCHEMA_NS_URI);
-            //TODO: change the path to the XSD file once containerized
-            Schema sc = sf.newSchema(new File("./xsd/mspl.xsd"));//(new File("/app/xsd/mspl.xsd"));
+            // change the path to the XSD file (/app/xsd/mspl.xsd) once containerized
+            //Schema sc = sf.newSchema(new File("./xsd/mspl.xsd"));
+            Schema sc = sf.newSchema(new File("/app/xsd/mspl.xsd"));
             u.setSchema(sc);
             Object unmsarshalObject = u.unmarshal(new FileInputStream(file));
             intent = (ITResourceOrchestrationType) ((JAXBElement<?>) unmsarshalObject).getValue();

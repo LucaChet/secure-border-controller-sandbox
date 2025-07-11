@@ -1,0 +1,117 @@
+apiVersion: v1
+metadata:
+  creationTimestamp: "2025-07-10T12:53:01Z"
+  name: consumer-network-intent
+  namespace: fluidos
+  resourceVersion: "16667"
+  uid: bc05bf22-582b-443f-ae74-4ef224ccdd9f
+data:
+  acceptMonitoring: "true"
+  action: Allow
+  isCNF: "true"
+  name: example-intent
+  networkIntents: |-
+    [ {
+      "isCNF" : false,
+      "source" : {
+        "isHostCluster" : false,
+        "pod" : [ {
+          "key" : "app",
+          "value" : "app-payment-1"
+        } ],
+        "namespace" : [ {
+          "key" : "name",
+          "value" : "payments"
+        } ]
+      },
+      "sourcePort" : "*",
+      "destination" : {
+        "isHostCluster" : true,
+        "pod" : [ {
+          "key" : "*",
+          "value" : "*"
+        } ],
+        "namespace" : [ {
+          "key" : "*",
+          "value" : "*"
+        } ]
+      },
+      "destinationPort" : "80",
+      "protocolType" : "TCP"
+    }, {
+      "isCNF" : false,
+      "source" : {
+        "isHostCluster" : false,
+        "pod" : [ {
+          "key" : "app",
+          "value" : "app-payment-2"
+        } ],
+        "namespace" : [ {
+          "key" : "name",
+          "value" : "payments"
+        } ]
+      },
+      "sourcePort" : "*",
+      "destination" : {
+        "isHostCluster" : true,
+        "pod" : [ {
+          "key" : "*",
+          "value" : "*"
+        } ],
+        "namespace" : [ {
+          "key" : "*",
+          "value" : "*"
+        } ]
+      },
+      "destinationPort" : "90",
+      "protocolType" : "TCP"
+    }, {
+      "isCNF" : false,
+      "source" : {
+        "isHostCluster" : false,
+        "pod" : [ {
+          "key" : "app",
+          "value" : "mobile-products"
+        } ],
+        "namespace" : [ {
+          "key" : "name",
+          "value" : "products"
+        } ]
+      },
+      "sourcePort" : "*",
+      "destination" : {
+        "isHostCluster" : true,
+        "addressRange" : "142.250.0.0/15"
+      },
+      "destinationPort" : "*",
+      "protocolType" : "ALL"
+    }, {
+      "isCNF" : false,
+      "source" : {
+        "isHostCluster" : false,
+        "pod" : [ {
+          "key" : "app",
+          "value" : "desktop-products"
+        } ],
+        "namespace" : [ {
+          "key" : "name",
+          "value" : "products"
+        } ]
+      },
+      "sourcePort" : "*",
+      "destination" : {
+        "isHostCluster" : true,
+        "pod" : [ {
+          "key" : "*",
+          "value" : "*"
+        } ],
+        "namespace" : [ {
+          "key" : "*",
+          "value" : "*"
+        } ]
+      },
+      "destinationPort" : "85",
+      "protocolType" : "UDP"
+    } ]
+  priority: "3000"
+kind: ConfigMap

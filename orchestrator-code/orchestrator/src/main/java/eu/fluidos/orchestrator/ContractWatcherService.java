@@ -22,7 +22,7 @@ public class ContractWatcherService {
     private void startWatcher() {
         try {
             CustomObjectsApi customObjectsApi = new CustomObjectsApi(kubernetesClient);
-        
+            System.out.println("Starting contract watcher...");
             Watch<JsonObject> watch = Watch.createWatch(
                 kubernetesClient,
                 customObjectsApi.listNamespacedCustomObjectCall(
@@ -48,7 +48,7 @@ public class ContractWatcherService {
 
                 if ("ADDED".equals(item.type)) 
                     handleContractCreation(item.object);
-                }
+            }
         }
         catch (ApiException e) {
             System.out.println("Error invoking Kubernetes API: " + e.getMessage());

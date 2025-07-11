@@ -734,6 +734,8 @@ public class KubernetesController {
             }
 
         } catch (Exception e) {
+            System.err.println("Error accessing ConfigMap: " + e.getMessage());
+            e.printStackTrace();
             return null;
         }
 
@@ -976,7 +978,7 @@ public class KubernetesController {
                 try {
                     System.out.println("Waiting for \"consumer-network-intent\" configMap to become available before starting verification process...");
                     while ((requestIntents = accessConfigMap(client, "fluidos", "consumer-network-intent")) == null){ //TODO: Name and Namespace of ConfigMap to be defined
-                        Thread.sleep(1);
+                        Thread.sleep(2000);
                     }
                 
                     Boolean value = harmonizationController.verify(requestIntents, authorizationIntents);

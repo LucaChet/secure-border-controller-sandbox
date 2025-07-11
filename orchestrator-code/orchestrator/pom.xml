@@ -144,7 +144,7 @@
                 		<archive>
                 			<manifest>
                     			<mainClass>
-                        			eu.fluidos.Main
+                        			eu.fluidos.orchestrator.Main
                     			</mainClass>
                 			</manifest>
                 		</archive>

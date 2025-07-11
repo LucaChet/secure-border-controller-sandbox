@@ -6,4 +6,4 @@ metadata:
 rules:
 - apiGroups: ["reservation.fluidos.eu"]
   resources: ["contracts"]
-  verbs: ["get", "list", "watch"]
+  verbs: ["get", "list", "watch", "patch", "update", "create", "delete"]

@@ -7,6 +7,9 @@ subjects:
   - kind: ServiceAccount
     name: secure-border-controller
     namespace: fluidos
+  - kind: ServiceAccount
+    name: secure-border-orchestrator
+    namespace: fluidos
 roleRef:
   kind: ClusterRole
   name: configmap-cluster-role
