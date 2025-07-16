@@ -93,6 +93,7 @@ Si potrebbe quasi rinominare per coerenza con il nome del progetto, essendo il c
 - on the consumer, unpeer passing local and remote kubeconfig, use the option to delete namespaces
 ```bash
 liqoctl unpeer --kubeconfig $KUBECONFIG --remote-kubeconfig=/home/luca/FluidosProject/try/node/tools/scripts/fluidos-provider-1-config --delete-namespaces
+kubectl delete foreignclusters.core.liqo.io fluidos-provider-1 -A
 ```
 - use peer command with the option to use a nodeport as gateway server service type
 ```bash

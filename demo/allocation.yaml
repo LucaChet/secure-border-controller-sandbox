@@ -8,5 +8,5 @@ spec:
   # intentID: intent-sample
   # Retrieve information from the reservation and the contract bou d to it
   contract:
-    name: "contract-fluidos-eu-k8slice-demo-1-7472"
+    name: "contract-fluidos-eu-k8slice-demo-3-352e"
     namespace: fluidos

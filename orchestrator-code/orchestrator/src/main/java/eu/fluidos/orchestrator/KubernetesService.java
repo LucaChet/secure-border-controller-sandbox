@@ -84,7 +84,7 @@ public class KubernetesService {
 
             ObjectNode conditionNode = objectMapper.createObjectNode();
 
-            
+            System.out.println("processing intent , src = " + src.toString() + ", dst = " + dst.toString());
             ObjectNode sourceNode = objectMapper.createObjectNode();
             ObjectNode srcResourceSelector = objectMapper.createObjectNode();
             sourceNode.put("isHostCluster", src.isIsHostCluster());
@@ -143,18 +143,19 @@ public class KubernetesService {
                 destinationNode.set("resourceSelector", dstResourceSelector);
                 conditionNode.set("destination", destinationNode);
 
-                // Altri campi
-                conditionNode.put("destinationPort", cond.getDestinationPort());
-                conditionNode.put("protocolType", cond.getProtocolType().toString());
-                formattedConditions.add(conditionNode);
+                
             } else if(dst instanceof CIDRSelector) {
                 CIDRSelector cidrDst = (CIDRSelector) dst;
                 dstResourceSelector.put("typeIdentifier", "CIDRSelector");
                 dstResourceSelector.put("selector", cidrDst.getAddressRange());
                 
                 destinationNode.set("resourceSelector", dstResourceSelector);
-                conditionNode.set("source", destinationNode);
+                conditionNode.set("destination", destinationNode);
             }
+            conditionNode.put("destinationPort", cond.getDestinationPort());
+            conditionNode.put("protocolType", cond.getProtocolType().toString());
+
+            formattedConditions.add(conditionNode);
         }
 
         try {

@@ -294,6 +294,7 @@ public class KubernetesController {
     private void startModuleTimer(ApiClient client) {
         ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
         scheduler.schedule(() -> {
+            System.out.println("Timer expired 5s");
             HarmonizationController harmonizationController = new HarmonizationController();
             try {
                 AuthorizationIntents contractAuthIntents = listContract(client);
@@ -328,6 +329,7 @@ public class KubernetesController {
             }
             firstCallToModuletimer = true;
         }, 5, TimeUnit.SECONDS);
+        System.out.println("Module timer started");
         firstCallToModuletimer = true;
     }
 
@@ -408,44 +410,44 @@ public class KubernetesController {
             );
 
             for (Watch.Response<JsonObject> item : watch) {
-            System.out.println("[DEBUG] Received event type: " + item.type);
+            //System.out.println("[DEBUG] Received event type: " + item.type);
             if (item.object == null) {
-                System.out.println("[DEBUG] Event object is null");
+                //System.out.println("[DEBUG] Event object is null");
                 continue;
             }
             if (item.type.equals("ADDED")) {
                 JsonObject configuration = item.object;
-                System.out.println("[DEBUG] ADDED Liqo Configuration resource: " + configuration);
+                //System.out.println("[DEBUG] ADDED Liqo Configuration resource: " + configuration);
             }
             if (item.type.equals("MODIFIED")) {
                 JsonObject configuration = item.object;
                 JsonObject metadata = configuration.getAsJsonObject("metadata");
                 JsonObject status = configuration.getAsJsonObject("status");
                 if (metadata == null) {
-                System.out.println("[DEBUG] Metadata is null in configuration: " + configuration);
+                //System.out.println("[DEBUG] Metadata is null in configuration: " + configuration);
                 }
                 if (status == null) {
-                System.out.println("[DEBUG] Status is null in configuration: " + configuration);
+                //System.out.println("[DEBUG] Status is null in configuration: " + configuration);
                 }
                 if (metadata != null && status != null) {
                 JsonObject labels = metadata.getAsJsonObject("labels");
                 if (labels == null) {
-                    System.out.println("[DEBUG] Labels are null in metadata: " + metadata);
+                    //System.out.println("[DEBUG] Labels are null in metadata: " + metadata);
                 }
                 String clusterID = null;
                 if (labels != null && labels.has("liqo.io/remote-cluster-id")) {
                     clusterID = labels.get("liqo.io/remote-cluster-id").getAsString();
                 } else {
-                    System.out.println("[DEBUG] 'liqo.io/remote-cluster-id' label missing in labels: " + labels);
+                    //System.out.println("[DEBUG] 'liqo.io/remote-cluster-id' label missing in labels: " + labels);
                 }
                 JsonObject remote = status.getAsJsonObject("remote");
                 if (remote == null) {
-                    System.out.println("[DEBUG] Remote is null in status: " + status);
+                    //System.out.println("[DEBUG] Remote is null in status: " + status);
                 }
                 if (clusterID != null && remote != null && remote.has("cidr")) {
                     JsonObject cidr = remote.getAsJsonObject("cidr");
                     if (cidr == null) {
-                    System.out.println("[DEBUG] CIDR is null in remote: " + remote);
+                    //System.out.println("[DEBUG] CIDR is null in remote: " + remote);
                     }
                     List<String> allowedIPs = new ArrayList<>();
                     if (cidr != null && cidr.has("external")) {
@@ -453,23 +455,23 @@ public class KubernetesController {
                         allowedIPs.add(ip.getAsString());
                     }
                     } else {
-                    System.out.println("[DEBUG] No 'external' field in cidr: " + cidr);
+                    //System.out.println("[DEBUG] No 'external' field in cidr: " + cidr);
                     }
                     if (cidr != null && cidr.has("pod")) {
                     for (JsonElement ip : cidr.getAsJsonArray("pod")) {
                         allowedIPs.add(ip.getAsString());
                     }
                     } else {
-                    System.out.println("[DEBUG] No 'pod' field in cidr: " + cidr);
+                    //System.out.println("[DEBUG] No 'pod' field in cidr: " + cidr);
                     }
                     if (!allowedIPs.isEmpty()) {
                     this.allowedIpList.put(clusterID, allowedIPs);
                     System.out.println("Updated allowedIpList for clusterID " + clusterID + ": " + allowedIPs);
                     } else {
-                    System.out.println("[DEBUG] allowedIPs is empty for clusterID " + clusterID + ", configuration: " + configuration);
+                    //System.out.println("[DEBUG] allowedIPs is empty for clusterID " + clusterID + ", configuration: " + configuration);
                     }
                 } else {
-                    System.out.println("[DEBUG] clusterID or remote/cidr missing, skipping entry. clusterID: " + clusterID + ", remote: " + remote);
+                    //System.out.println("[DEBUG] clusterID or remote/cidr missing, skipping entry. clusterID: " + clusterID + ", remote: " + remote);
                 }
                 }
             }
@@ -482,7 +484,7 @@ public class KubernetesController {
                 this.allowedIpList.remove(clusterID);
                 System.out.println("Removed allowedIpList entry for clusterID " + clusterID);
                 } else {
-                System.out.println("[DEBUG] Metadata or labels missing in DELETED event: " + configuration);
+                //System.out.println("[DEBUG] Metadata or labels missing in DELETED event: " + configuration);
                 }
             }
             }
@@ -734,8 +736,8 @@ public class KubernetesController {
             }
 
         } catch (Exception e) {
-            System.err.println("Error accessing ConfigMap: " + e.getMessage());
-            e.printStackTrace();
+            //System.err.println("Error accessing ConfigMap: " + e.getMessage());
+            //e.printStackTrace();
             return null;
         }
 
@@ -767,6 +769,7 @@ public class KubernetesController {
 
             for (Watch.Response<JsonObject> item : watch) {
                 if (item.type.equals("MODIFIED")) {
+                    System.out.println("Contract modified");
                     JsonObject contract = item.object;
                     String configMapName = contract.getAsJsonObject("spec").get("networkRequests").getAsString();
                     syncPatchedContract.setContractAvailable(true, configMapName); //contract available! -> might be convenient to better check the condition
