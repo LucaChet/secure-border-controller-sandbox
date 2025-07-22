@@ -213,6 +213,7 @@ done
 kubectl apply -f flavors
 kubectl apply -f ./secure-border-orchestrator.yaml""".replace("{provider_kubeconfig}", provider_kubeconfig)
 #subprocess.run(steps_prov, shell=True, executable="/bin/bash", check=True)
+subprocess.run("pwd", shell=True, check=True)
 print("[+] Provider cluster configured:")
 print("\t[+] Created namespaces.")
 print("\t[+] Created serviceaccounts.")
@@ -225,7 +226,7 @@ close_terminal(consumer_watch)
 close_terminal(provider_watch)
 
 print("\nStep 5: Configuration completed. The following image shows the two clusters and the resources running in them.")
-process = show_image_window_process("Demo Diagram", "~/FluidosProject/secure-border-controller-sandbox/demo/demo_cover.png") #TODO real image
+process = show_image_window_process("Demo Diagram", "./images/image1") #TODO real image
 wait_for_user("Press Enter to close the image window and proceed...")
 process.terminate()
 process.join()
@@ -270,7 +271,7 @@ contract_name=$(kubectl get reservation $reservation_name -n fluidos -o jsonpath
 path_allocation="./allocation.yaml"
 if [ -f "$path_reservation" ]; then
     echo "[+] Processing $path_reservation"
-    yq eval ".spec.contract.name = \\"$contract_name\\"" -i "$path_allocation"
+    yq eval ".spec.contract.name = \\"$contract_name\\"" -i "$path_allo<cation"
 fi
 kubectl apply -f ./allocation.yaml
 sleep 2
@@ -279,7 +280,7 @@ sleep 2
 close_terminal(sbc_logs)
 
 wait_for_user("\nStep 11: The contract is now created and the resources are acquired. The following image shows the two clusters and how they peered to make use of resources continuum...")
-process = show_image_window_process("Offloading", "~/FluidosProject/secure-border-controller-sandbox/demo/demo_cover.png") #TODO real image
+process = show_image_window_process("Offloading", "./images/image2.png") #TODO real image
 wait_for_user("Press Enter to close the image window and proceed...")
 process.terminate()
 process.join()
@@ -308,9 +309,14 @@ sleep 3
 """
 #subprocess.run(steps_cons, shell=True, executable="/bin/bash", check=True) 
 
-wait_for_user("\nStep 14: The SBC on the Provider cluster harmonized eventual discordancies between Authorization and Request Intents. It then translated such intents into a set of Kubernetes network policies to automatically enforce the security policies")
+wait_for_user("\nStep 14: The SBC on the Provider cluster harmonized eventual discordancies between Authorization and Request Intents. It then translated such intents into a set of Kubernetes network policies to enable authorized connections.")
 close_terminal(consumer)
 close_terminal(provider)
+
+process = show_image_window_process("Network Policies", "./images/image3.png")
+wait_for_user("Press Enter to close the image window and proceed...")
+process.terminate()
+process.join()
 
 wait_for_user("\nStep 15: Check the effectiveness of the network policies enforced by the SBC by testing the connectivity between pods in different namespaces.")
 term1 = exec_shell_by_label("monitoring", "app=resource-monitor", "busybox", provider_kubeconfig)
