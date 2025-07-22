@@ -53,8 +53,9 @@ public class HarmonizationData {
 	 */
 
 	 public boolean verify(RequestIntents requestIntent, AuthorizationIntents authIntent) {
-		System.out.println("[VERIFY] Process started...");
+		//System.out.println("[VERIFY] Process started...");
 		for (ConfigurationRule cr : requestIntent.getConfigurationRule()) {
+	
 			if (!verifyConfigurationRule(cr, authIntent.getForbiddenConnectionList())) {
 				return false;
 			}
@@ -87,9 +88,7 @@ public class HarmonizationData {
 			KubernetesNetworkFilteringCondition tmpCond = (KubernetesNetworkFilteringCondition) confRule
 					.getConfigurationCondition();
 
-			loggerInfo.debug("[VERIFY] - processing rule "
-					+ HarmonizationUtils.kubernetesNetworkFilteringConditionToString(resCond) + " vs. "
-					+ HarmonizationUtils.kubernetesNetworkFilteringConditionToString(tmpCond));
+			//System.out.println("[VERIFY] - processing rule " + HarmonizationUtils.kubernetesNetworkFilteringConditionToString(resCond) + " vs. " + HarmonizationUtils.kubernetesNetworkFilteringConditionToString(tmpCond));
 
 			// Step-1: starts with protocol type. Detect if protocol types of res are overlapping with tmpCond.
 			overlap = HarmonizationUtils.verifyProtocolType(resCond.getProtocolType().value(),

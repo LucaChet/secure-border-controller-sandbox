@@ -31,8 +31,8 @@ spec:
           mandatoryCommunications:
             - name: "AuthorizationMandatory_1"
               source:
+                isHostCluster: false
                 resourceSelector:
-                  isHotCluster: "false"
                   typeIdentifier: PodNamespaceSelector
                   selector:
                     pod:
@@ -40,8 +40,8 @@ spec:
                     namespace:
                       name: "monitoring"
               destination:
+                isHostCluster: true
                 resourceSelector:
-                  isHotCluster: "true"
                   typeIdentifier: PodNamespaceSelector
                   selector:
                     pod:
@@ -53,8 +53,8 @@ spec:
           deniedCommunications:
             - name: "AuthorizationDeny_1"
               source:
+                isHostCluster: true
                 resourceSelector:
-                  isHotCluster: true
                   typeIdentifier: PodNamespaceSelector
                   selector:
                     pod:
@@ -62,16 +62,16 @@ spec:
                     namespace:
                       "*": "*"
               destination:
+                isHostCluster: false
                 resourceSelector:
-                  isHotCluster: "false"
                   typeIdentifier: CIDRSelector
                   selector: "130.0.0.0/8"
               destinationPort: "*"
               protocolType: "ALL"
             - name: "AuthorizationDeny_2"
               source:
+                isHostCluster: true
                 resourceSelector:
-                  isHotCluster: true
                   typeIdentifier: PodNamespaceSelector
                   selector:
                     pod:
@@ -79,8 +79,8 @@ spec:
                     namespace:
                       "*": "*"
               destination:
+                isHostCluster: false
                 resourceSelector:
-                  isHotCluster: false
                   typeIdentifier: PodNamespaceSelector
                   selector:
                     pod:
@@ -91,8 +91,8 @@ spec:
               protocolType: "SCTP"
             - name: "AuthorizationDeny_3"
               source:
+                isHostCluster: true
                 resourceSelector:
-                  isHotCluster: "true"
                   typeIdentifier: PodNamespaceSelector
                   selector:
                     pod:
@@ -100,8 +100,8 @@ spec:
                     namespace:
                       "*": "*"
               destination:
+                isHostCluster: false
                 resourceSelector:
-                  isHotCluster: "false"
                   typeIdentifier: PodNamespaceSelector
                   selector:
                     pod:
@@ -112,8 +112,8 @@ spec:
               protocolType: "UDP"
             - name: "AuthorizationDeny_4"
               source:
+                isHostCluster: true
                 resourceSelector:
-                  isHotCluster: "true"
                   typeIdentifier: PodNamespaceSelector
                   selector:
                     pod:
@@ -121,8 +121,8 @@ spec:
                     namespace:
                       "*": "*"
               destination:
+                isHostCluster: false
                 resourceSelector:
-                  isHotCluster: "false"
                   typeIdentifier: PodNamespaceSelector
                   selector:
                     pod:
@@ -151,10 +151,10 @@ spec:
   networkPropertyType: networkProperty
   owner:
     domain: fluidos.eu
-    ip: "172.18.0.3:30001"
-    nodeID: "i7pvdq8nkh"
+    ip: "172.18.0.2:30001"
+    nodeID: "emjffse0xy"
   price:
     amount: ""
     currency: ""
     period: ""
-  providerID: "i7pvdq8nkh"
+  providerID: "emjffse0xy"

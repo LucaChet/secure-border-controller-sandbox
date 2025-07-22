@@ -14,7 +14,7 @@ data:
     {
       "source": {
         "resourceSelector": {
-          "isHotCluster": false,
+          "isHostCluster": false,
           "typeIdentifier": "PodNamespaceSelector",
           "selector": {
             "pod": {
@@ -28,7 +28,7 @@ data:
       },
       "destination": {
         "resourceSelector": {
-          "isHotCluster": true,
+          "isHostCluster": true,
           "typeIdentifier": "PodNamespaceSelector",
           "selector": {
             "pod": {
@@ -46,7 +46,7 @@ data:
     {
       "source": {
         "resourceSelector": {
-          "isHotCluster": false,
+          "isHostCluster": false,
           "typeIdentifier": "PodNamespaceSelector",
           "selector": {
             "pod": {
@@ -60,7 +60,7 @@ data:
       },
       "destination": {
         "resourceSelector": {
-          "isHotCluster": true,
+          "isHostCluster": true,
           "typeIdentifier": "PodNamespaceSelector",
           "selector": {
             "pod": {
@@ -78,7 +78,7 @@ data:
     {
       "source": {
         "resourceSelector": {
-          "isHotCluster": false,
+          "isHostCluster": false,
           "typeIdentifier": "PodNamespaceSelector",
           "selector": {
             "pod": {
@@ -92,7 +92,7 @@ data:
       },
       "destination": {
         "resourceSelector": {
-          "isHotCluster": true,
+          "isHostCluster": true,
           "typeIdentifier": "CIDRSelector",
           "selector": "142.250.0.0/15"
         }
@@ -103,7 +103,7 @@ data:
     {
       "source": {
         "resourceSelector": {
-          "isHotCluster": false,
+          "isHostCluster": false,
           "typeIdentifier": "PodNamespaceSelector",
           "selector": {
             "pod": {
@@ -117,7 +117,7 @@ data:
       },
       "destination": {
         "resourceSelector": {
-          "isHotCluster": true,
+          "isHostCluster": true,
           "typeIdentifier": "PodNamespaceSelector",
           "selector": {
             "pod": {

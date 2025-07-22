@@ -42,7 +42,7 @@ public class HarmonizationUtils {
 
 		int y0 = Integer.parseInt(y[0]);
 		int y1 = y.length == 2 ? Integer.parseInt(y[1]) : y0;
-
+		//System.out.println("[VERIFY] - checking port range overlap: " + x0 + ", " + x1 +" vs. " + y0 + ", " + y1);
 		return (x0 <= y1 && x1 >= y0);
 	}
 

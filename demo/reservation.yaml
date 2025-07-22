@@ -26,10 +26,10 @@ spec:
   # Retrieve from PeeringCandidate Flavor Owner field    
   seller:
     domain: fluidos.eu
-    ip: "172.18.0.7:30001"
-    nodeID: "wk4cmuxveu"
+    ip: "172.18.0.2:30001"
+    nodeID: "emjffse0xy"
   # Retrieve from configmap
   buyer:
     domain: fluidos.eu
-    ip: "172.18.0.6"
-    nodeID: "lxeh2pnrdp"
+    ip: "172.18.0.3"
+    nodeID: "aies4e4tb7"

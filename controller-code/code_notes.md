@@ -43,18 +43,12 @@ Si potrebbe quasi rinominare per coerenza con il nome del progetto, essendo il c
 
 ## TODO: sync 1
 1. ✅ aggiungere `"liqo"` direttamente nella lista dei namespaces da escludere (`namespacesToExclude`), per snellire il controllo sui namespaces.
->   ⚠️ Se il namespace `"liqo"` cambia nome ad esempio con tag casuali, questo approccio è da rivedere
 2. ✅ nel watcher `watchNamespaces`, quando un NS viene eliminato sarebbe quantomeno da togliere dalla lista dei NS offloaded, locale al controller, chiamata `offloadedNamespaces`
 3. ✅ nel watcher `watchNamespaces`, quando un namespace viene modificato, il controllo è incoerente con le altre due condizioni (namespace `ADDED` e `DELETED`): da implementare check che il namespace sia offloadato, non che non sia tra quelli da escludere
 4. ✅ migliorare la leggibilità e la funzionalità della funzione `startModuleTimer`, rimuovere il catch vuoto
-5.  sostituire timer di 5s con attesa automatica della risorsa `networkRequests` affinchè quando questa è pronta si esegua l'operazione
+5. ✅ sostituire timer di 5s con attesa automatica della risorsa `networkRequests` affinchè quando questa è pronta si esegua l'operazione
 6. ✅ rimuovere il thread `applyDefaultNetworkPolicies` spostandone la logica dentro al watcher dei namespace
->   ⚠️ Da testare
-7. migliorare la funzione `verify`, rimuovendo il riferimento hardcoded al file XML contenente gli intenti in MSPL.
->   ⚠️ Possibili soluzioni:
->    - Usare un file di configurazione esterno
->    - Usare una variabile d'ambiente
->    - altro..?
+7. ✅ migliorare la funzione `verify`, rimuovendo il riferimento hardcoded al file XML contenente gli intenti in MSPL.
 8. ✅ testare la funzione `verify` così da avere prova che funzioni, scoprire perchè passa il check sul primo peeringcandidate
 9. ✅ la funzione `createProviderCluster` *non ha senso* 
 10. per testare il controllore come componente di un cluster KinD: 
@@ -63,19 +57,21 @@ Si potrebbe quasi rinominare per coerenza con il nome del progetto, essendo il c
     - cambiare il template del manifesto YAML
 
 ## TODO: sync 2
-1. PER LA DEMO! la `verify` dovrebbe restituire un ranking dei candidati al peering anzichè semplicemente escludere o accettare (true/false) i singoli candidati. In questo modo l'armonizzazione verrebbe sfruttata appieno nel suo algoritmo complesso, visto che al momento uno dei due lati degli intenti (richiesta o autorizzazione) sono una wildcard `*` che rende banale l'armonizzazione.
-2. ✅ `verify` non deve avere il cluster tra gli argomenti, ma soltanto i `requestIntent` e gli `authorizationIntent`
-3. ✅ rimuovere le mappe dalla verify, visto che tanto non viene effettuato il check a basso livello sui pods ma soltanto ad alto livello sulle label
-4.  creare un watcher su una configMap (quella di UMU)
-5. ✅ trovare un modo per aspettare che delle risorse siano pronte: quando ho ricevuto i PeeringCandidates devo aspettare la ConfigMap di UMU per poi accedervi una volta che esiste ed è popolata
->   ⚠️ busy waiting con while loop: da testare -> TEST OK ✅
-6. DEMO: lanciare un test con n provider e un solo consumer 
-7. Rendere la config map creata (e offloaded) con un nome che dipenda da quello che leggo nel field apposito del contratto (riga 700 controller)
-8. Rimuovere dai log del SBC l'errore 404 causato dal watcher sulla CRD TunnelEndpoint (che forse non esiste più)
-⚠️ modificata logica `callVerifier` rimuovendo il check atomico che sia possibile chiamare una sola volta la funzione verify all'arrivo dei PeeringCandidates!! 
-⚠️ monitorare PR fluidos node per fixare l'errore sui peeringCandidates che arrivano vuoti
-⚠️ PER LA DEMO! fix immagine docker per il SBC in modo da non dover fare la docker build in locale e load in kind a mano!
+ 
+1. ✅ `verify` non deve avere il cluster tra gli argomenti, ma soltanto i `requestIntent` e gli `authorizationIntent`
+2. ✅ rimuovere le mappe dalla verify, visto che tanto non viene effettuato il check a basso livello sui pods ma soltanto ad alto livello sulle label
+3. ✅ creare un watcher su una configMap (quella di UMU)
+4. ✅ trovare un modo per aspettare che delle risorse siano pronte: quando ho ricevuto i PeeringCandidates devo aspettare la ConfigMap di UMU per poi accedervi una volta che esiste ed è popolata
+5. ✅ Rendere la config map creata (e offloaded) con un nome che dipenda da quello che leggo nel field apposito del contratto (riga 700 controller)
+6. ✅ Rimuovere dai log del SBC l'errore 404 causato dal watcher sulla CRD TunnelEndpoint (che forse non esiste più)
+
+> ⚠️ monitorare PR fluidos node per fixare l'errore sui peeringCandidates che arrivano vuoti
+>   - PER LA DEMO! fix immagine docker per il SBC in modo da non dover fare la docker build in locale e load in kind a mano!
+>   - PER LA DEMO! aumentare il numero di provider
+>   - PER LA DEMO! la `verify` dovrebbe restituire un ranking dei candidati al peering anzichè semplicemente escludere o accettare (true/false) i singoli candidati. In questo modo l'armonizzazione verrebbe sfruttata appieno nel suo algoritmo complesso, visto che al momento uno dei due lati degli intenti (richiesta o autorizzazione) sono una wildcard `*` che rende banale l'armonizzazione.
 ---
+## TO BE DEFINED:
+1. Il controllore si mette in attesa di trovare una risorsa di tipo `configuration.networking.io di Liqo`, quando la trova (popolata) aggiorna la lista `allowedIpList` e quando un namespace viene offloaded, questa è usata per consentire la comunicazione con gli altri pods di namespaces NON offloadati. Il punto è che le regole vengono applicate come Network Policies nel NS offloaded ma non negli altri, che quindi restano di fatto isolati. 
 
 # Demo Cleanup
 #### On CONSUMER cluster:
@@ -89,4 +85,17 @@ Si potrebbe quasi rinominare per coerenza con il nome del progetto, essendo il c
 #### On PROVIDER cluster: 
 - delete allocation
 - delete contract
+- reset flavor(s) to available
 - ⚠️ liqo unpeer (uninstall liqo?)
+
+#### Liqo Unpeering
+- on the consumer, unoffload namespace `payments` e `products` 
+- on the consumer, unpeer passing local and remote kubeconfig, use the option to delete namespaces
+```bash
+liqoctl unpeer --kubeconfig $KUBECONFIG --remote-kubeconfig=/home/luca/FluidosProject/try/node/tools/scripts/fluidos-provider-1-config --delete-namespaces
+kubectl delete foreignclusters.core.liqo.io fluidos-provider-1 -A
+```
+- use peer command with the option to use a nodeport as gateway server service type
+```bash
+liqoctl peer --remote-kubeconfig /home/luca/FluidosProject/try/node/tools/scripts/fluidos-provider-1-config --gw-server-service-type NodePort
+```

@@ -1,0 +1,23 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: orchestrator
+  namespace: fluidos
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: orchestrator
+  template:
+    metadata:
+      labels:
+        app: orchestrator
+    spec:
+      serviceAccountName: secure-border-orchestrator
+      containers:
+      - name: orchestrator
+        image: secure-border-orchestrator:latest  # Cambia con il nome/tag reale della tua image
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 8080
+
